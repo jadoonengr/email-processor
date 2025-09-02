@@ -1,4 +1,6 @@
 __init__*.py
 /env
 *__pycache__*
-
+credentials.json
+token.json
+*.log
