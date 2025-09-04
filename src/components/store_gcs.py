@@ -2,6 +2,7 @@ import os
 import mimetypes
 import base64
 from typing import Optional
+import datetime
 
 from src.utils.file_utils import sanitize_filename
 
@@ -43,13 +44,17 @@ def get_gcs_attachment_statistics(storage_client, bucket_name):
 
 
 def upload_attachment_to_gcs(
-    storage_client, bucket, file_data: bytes, filename: str, message_id: str
+    storage_client, bucket_name, file_data: bytes, filename: str, message_id: str
 ) -> Optional[str]:
     """Upload attachment to GCS and return public URL."""
     try:
+        # Create file name with date
+        curr_date = datetime.datetime.now().strftime("%Y-%m-%d")
         safe_filename = sanitize_filename(filename)
-        blob_name = f"attachments/{message_id}/{safe_filename}"
+        blob_name = f"{curr_date}/{message_id}/{safe_filename}"
 
+        # Get bucket and create blob
+        bucket = storage_client.get_bucket(bucket_name)
         blob = bucket.blob(blob_name)
 
         # Set content type
@@ -58,11 +63,14 @@ def upload_attachment_to_gcs(
             blob.content_type = content_type
 
         # Upload file
-        blob.upload_from_string(file_data)
-        blob.make_public()
+        blob.upload_from_string(
+            file_data,
+            content_type=content_type,  # Must match actual content
+        )
 
-        print(f"  ✓ Uploaded: {filename} -> {blob_name}")
-        return blob.public_url
+        qualified_blob_name = f"gs://{bucket_name}/{blob_name}"
+        print(f"  ✓ Uploaded: {filename} -> {qualified_blob_name}")
+        return qualified_blob_name
 
     except Exception as e:
         print(f"  ✗ Upload failed for {filename}: {e}")
