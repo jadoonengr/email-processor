@@ -49,59 +49,61 @@ def parse_email_date(date_str):
         return datetime.utcnow().isoformat()
 
 
-def download_and_upload_attachment(
-    gmail_service,
-    storage_client,
-    bucket,
-    message_id: str,
-    attachment_id: str,
-    filename: str,
-    mime_type: str,
-) -> Dict[str, Any]:
-    """Download attachment from Gmail and upload to GCS."""
-    try:
-        # Get attachment from Gmail
-        attachment = (
-            gmail_service.users()
-            .messages()
-            .attachments()
-            .get(userId="me", messageId=message_id, id=attachment_id)
-            .execute()
-        )
+# def download_and_upload_attachment(
+#     gmail_service,
+#     storage_client,
+#     bucket,
+#     message_id: str,
+#     attachment_id: str,
+#     filename: str,
+#     mime_type: str,
+# ) -> Dict[str, Any]:
+#     """Download attachment from Gmail and upload to GCS."""
+#     try:
+#         # Get attachment from Gmail
+#         attachment = (
+#             gmail_service.users()
+#             .messages()
+#             .attachments()
+#             .get(userId="me", messageId=message_id, id=attachment_id)
+#             .execute()
+#         )
 
-        file_data = base64.urlsafe_b64decode(attachment["data"])
+#         file_data = base64.urlsafe_b64decode(attachment["data"])
 
-        # Upload to GCS
-        gcs_url = upload_attachment_to_gcs(
-            storage_client, bucket, file_data, filename, message_id
-        )
+#         # Upload to GCS
+#         gcs_url = upload_attachment_to_gcs(
+#             storage_client, bucket, file_data, filename, message_id
+#         )
 
-        return {
-            "filename": filename,
-            "mime_type": mime_type,
-            "size": len(file_data),
-            "gcs_url": gcs_url,
-            "uploaded_successfully": gcs_url is not None,
-            "attachment_id": attachment_id,
-        }
+#         return {
+#             "filename": filename,
+#             "mime_type": mime_type,
+#             "size": len(file_data),
+#             "gcs_url": gcs_url,
+#             "uploaded_successfully": gcs_url is not None,
+#             "attachment_id": attachment_id,
+#         }
 
-    except Exception as e:
-        print(f"  ✗ Error processing {filename}: {e}")
-        return {
-            "filename": filename,
-            "mime_type": mime_type,
-            "size": 0,
-            "gcs_url": None,
-            "uploaded_successfully": False,
-            "attachment_id": attachment_id,
-            "error": str(e),
-        }
+#     except Exception as e:
+#         print(f"  ✗ Error processing {filename}: {e}")
+#         return {
+#             "filename": filename,
+#             "mime_type": mime_type,
+#             "size": 0,
+#             "gcs_url": None,
+#             "uploaded_successfully": False,
+#             "attachment_id": attachment_id,
+#             "error": str(e),
+#         }
 
 
 def extract_attachments(
-    gmail_service, storage_client, bucket, message: Dict, message_id: str
+    gmail_service,
+    message: Dict,
 ) -> List[Dict[str, Any]]:
     """Extract all attachments from email and upload to GCS."""
+    message_id = message["id"]
     attachments = []
 
     def process_parts(parts):
@@ -109,15 +111,27 @@ def extract_attachments(
             if "parts" in part:
                 process_parts(part["parts"])
             elif part.get("filename") and part.get("body", {}).get("attachmentId"):
-                attachment_info = download_and_upload_attachment(
-                    gmail_service,
-                    storage_client,
-                    bucket,
-                    message_id,
-                    part["body"]["attachmentId"],
-                    part["filename"],
-                    part.get("mimeType", "application/octet-stream"),
+                # Get attachment from Gmail
+                attachment = (
+                    gmail_service.users()
+                    .messages()
+                    .attachments()
+                    .get(
+                        userId="me",
+                        messageId=message_id,
+                        id=part["body"]["attachmentId"],
+                    )
+                    .execute()
                 )
+
+                file_data = base64.urlsafe_b64decode(attachment["data"])
+
+                attachment_info = {
+                    "file_id": part["body"]["attachmentId"],
+                    "file_name": part["filename"],
+                    "file_type": part.get("mimeType", "application/octet-stream"),
+                    "file_data": file_data,
+                }
                 attachments.append(attachment_info)
 
     payload = message.get("payload", {})
@@ -125,52 +139,46 @@ def extract_attachments(
     if "parts" in payload:
         process_parts(payload["parts"])
     elif payload.get("filename") and payload.get("body", {}).get("attachmentId"):
-        attachment_info = download_and_upload_attachment(
-            gmail_service,
-            storage_client,
-            bucket,
-            message_id,
-            payload["body"]["attachmentId"],
-            payload["filename"],
-            payload.get("mimeType", "application/octet-stream"),
+        attachment = (
+            gmail_service.users()
+            .messages()
+            .attachments()
+            .get(
+                userId="me",
+                messageId=message_id,
+                id=payload["body"]["attachmentId"],
+            )
+            .execute()
         )
+
+        file_data = base64.urlsafe_b64decode(attachment["data"])
+
+        attachment_info = {
+            "file_id": payload["body"]["attachmentId"],
+            "file_name": payload["filename"],
+            "file_type": payload.get("mimeType", "application/octet-stream"),
+            "file_data": file_data,
+        }
         attachments.append(attachment_info)
 
     return attachments
 
 
-def parse_email(gmail_service, storage_client, bucket, message: Dict) -> Dict[str, Any]:
-    """Parse Gmail message and extract attachments to GCS."""
+def read_email(gmail_service, email) -> Dict[str, Any]:
+    """Extract and return Gmail message with attachments"""
+    # Get full message
+    message = (
+        gmail_service.users()
+        .messages()
+        .get(userId="me", id=email["id"], format="full")
+        .execute()
+    )
+
+    # Extract headers
     headers = {h["name"]: h["value"] for h in message["payload"].get("headers", [])}
 
     # Extract attachments
-    attachments = extract_attachments(
-        gmail_service, storage_client, bucket, message, message["id"]
-    )
-
-    # Prepare attachment summary
-    attachment_summary = []
-    total_attachment_size = 0
-    successful_uploads = 0
-
-    for att in attachments:
-        attachment_summary.append(
-            {
-                "filename": att["filename"],
-                "mime_type": att["mime_type"],
-                "size": att["size"],
-                "gcs_url": att["gcs_url"],
-                "uploaded_successfully": att["uploaded_successfully"],
-            }
-        )
-        total_attachment_size += att["size"]
-        if att["uploaded_successfully"]:
-            successful_uploads += 1
-
-    if attachments:
-        print(
-            f"  📎 {len(attachments)} attachments, {successful_uploads} uploaded successfully"
-        )
+    attachments = extract_attachments(gmail_service, message)
 
     return {
         "message_id": message["id"],
@@ -185,15 +193,13 @@ def parse_email(gmail_service, storage_client, bucket, message: Dict) -> Dict[st
         "snippet": message.get("snippet", ""),
         "message_size": message.get("sizeEstimate", 0),
         "attachment_count": len(attachments),
-        "attachment_summary": json.dumps(attachment_summary),
-        "total_attachment_size": total_attachment_size,
-        "successful_uploads": successful_uploads,
-        "processed_at": datetime.utcnow().isoformat(),
+        "attachments": attachments,
+        "processed_at": datetime.now().isoformat(),
     }
 
 
-def get_unread_emails(
-    gmail_service, storage_client, bucket, max_results: int = 100
+def list_unread_emails(
+    gmail_service, max_results: int = 100
 ):  # -> List[Dict[str, Any]]:
     """Fetch unread emails and process attachments."""
     try:
@@ -207,24 +213,7 @@ def get_unread_emails(
         messages = results.get("messages", [])
         print(f"📧 Found {len(messages)} unread emails")
 
-        email_data = []
-
-        for i, message in enumerate(messages, 1):
-            print(f"\n[{i}/{len(messages)}] Processing message {message['id'][:8]}...")
-
-            # Get full message
-            msg = (
-                gmail_service.users()
-                .messages()
-                .get(userId="me", id=message["id"], format="full")
-                .execute()
-            )
-
-            # Parse email and process attachments
-            parsed_email = parse_email(gmail_service, storage_client, bucket, msg)
-            email_data.append(parsed_email)
-
-        return email_data
+        return messages
 
     except Exception as error:
         print(f"❌ Error fetching emails: {error}")

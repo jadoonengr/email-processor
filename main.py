@@ -10,7 +10,8 @@ from src.components.auth_services import (
     authenticate_bigquery,
     authenticate_gcs,
 )
-from src.components.process_emails import get_unread_emails
+from src.components.process_emails import list_unread_emails, read_email
+from src.components.store_gcs import upload_attachment_to_gcs
 from src.components.store_bigquery import store_emails_in_bigquery
 
 # --- Configuration ---
@@ -45,19 +46,53 @@ def process_email(cloud_event):
         bigquery_client = authenticate_bigquery(PROJECT_ID)
         storage_client = authenticate_gcs(PROJECT_ID)
 
-        # Fetch unread emails
-        emails = get_unread_emails(
+        # Fetch unread emails list
+        emails = list_unread_emails(
             gmail_service,
-            storage_client,
-            GCS_BUCKET_NAME,
-            max_results=10,
+            max_results=100,
         )
 
         if emails:
-            # Store in BigQuery
-            table_ref = f"{PROJECT_ID}.{BIGQUERY_DATASET}.{BIGQUERY_TABLE}"
-            store_emails_in_bigquery(bigquery_client, table_ref, emails)
-            print(f"Processing complete! Processed {len(emails)} emails.")
+            for i, email in enumerate(emails, 1):
+                print(f"\n[{i}/{len(emails)}] Processing message {email['id'][:8]}...")
+
+                # Read and process each email
+                extracted_email = read_email(gmail_service, email)
+
+                # Store attachments to GCS
+                attachments = extracted_email.get("attachments", [])
+
+                for attachment in attachments:
+                    file_name = attachment["file_name"]
+                    file_data = attachment["file_data"]
+                    file_type = attachment["file_type"]
+
+                    if file_data:
+                        gcs_url = upload_attachment_to_gcs(
+                            storage_client,
+                            GCS_BUCKET_NAME,
+                            file_name,
+                            file_data,
+                            file_type,
+                            email["id"],
+                        )
+
+                        # Remove file data to save space
+                        attachment.pop("file_data", None)
+
+                        # Add GCS URL to attachment info
+                        if gcs_url:
+                            attachment["gcs_url"] = gcs_url
+                            print(f"  📎 Attachment uploaded to GCS: {gcs_url}")
+                        else:
+                            print(f"  ⚠ Failed to upload attachment: {file_name}")
+                    else:
+                        print(f"  ⚠ No data for attachment: {file_name}")
+
+                # Store email to BigQuery
+                table_ref = f"{PROJECT_ID}.{BIGQUERY_DATASET}.{BIGQUERY_TABLE}"
+                store_emails_in_bigquery(bigquery_client, table_ref, extracted_email)
+                print(f"Processing complete!")
         else:
             print("No unread emails found.")
 
