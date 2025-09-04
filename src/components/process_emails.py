@@ -46,56 +46,8 @@ def parse_email_date(date_str):
         dt = parsedate_to_datetime(date_str)
         return dt.isoformat()
     except:
-        return datetime.utcnow().isoformat()
+        return datetime.now().isoformat()
 
-
-# def download_and_upload_attachment(
-#     gmail_service,
-#     storage_client,
-#     bucket,
-#     message_id: str,
-#     attachment_id: str,
-#     filename: str,
-#     mime_type: str,
-# ) -> Dict[str, Any]:
-#     """Download attachment from Gmail and upload to GCS."""
-#     try:
-#         # Get attachment from Gmail
-#         attachment = (
-#             gmail_service.users()
-#             .messages()
-#             .attachments()
-#             .get(userId="me", messageId=message_id, id=attachment_id)
-#             .execute()
-#         )
-
-#         file_data = base64.urlsafe_b64decode(attachment["data"])
-
-#         # Upload to GCS
-#         gcs_url = upload_attachment_to_gcs(
-#             storage_client, bucket, file_data, filename, message_id
-#         )
-
-#         return {
-#             "filename": filename,
-#             "mime_type": mime_type,
-#             "size": len(file_data),
-#             "gcs_url": gcs_url,
-#             "uploaded_successfully": gcs_url is not None,
-#             "attachment_id": attachment_id,
-#         }
-
-#     except Exception as e:
-#         print(f"  ✗ Error processing {filename}: {e}")
-#         return {
-#             "filename": filename,
-#             "mime_type": mime_type,
-#             "size": 0,
-#             "gcs_url": None,
-#             "uploaded_successfully": False,
-#             "attachment_id": attachment_id,
-#             "error": str(e),
-#         }
 
 
 def extract_attachments(

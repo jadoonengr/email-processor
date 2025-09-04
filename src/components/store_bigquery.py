@@ -36,5 +36,4 @@ def store_emails_in_bigquery(bigquery_client, table_ref, email):
     if errors:
         print(f"❌ BigQuery insertion errors: {errors}")
     else:
-
-        print(f"✓ Stored email ({email["subject"]}) in BigQuery")
+        print(f"✓ Stored email ({email['subject']}) in BigQuery")

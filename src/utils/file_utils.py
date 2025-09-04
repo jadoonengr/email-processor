@@ -45,4 +45,4 @@ def parse_email_date(date_str: str) -> str:
         dt = parsedate_to_datetime(date_str)
         return dt.isoformat()
     except:
-        return datetime.utcnow().isoformat()
+        return datetime.now().isoformat()
