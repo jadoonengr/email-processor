@@ -18,8 +18,8 @@ def authenticate_gmail():
     current_directory = os.getcwd()
     parent_directory = os.path.dirname(current_directory)
     credentials_file_path = f"{parent_directory}/{CREDENTIALS_FILE}"
-    
-    try: 
+
+    try:
         creds = None
         token_file = "token.json"
 
@@ -43,10 +43,11 @@ def authenticate_gmail():
 
         gmail_service = build("gmail", "v1", credentials=creds)
         print("Gmail authentication successful!")
+        return gmail_service
+
     except Exception as e:
         print(f"Gmail authentication failed with error: {e}")
-
-    return gmail_service
+        return None
 
 
 def authenticate_bigquery(project_id):
@@ -54,10 +55,11 @@ def authenticate_bigquery(project_id):
     try:
         bigquery_client = bigquery.Client(project=project_id)
         print("BigQuery client initialized!")
+        return bigquery_client
+
     except Exception as e:
         print(f"BigQuery authentication failed with error: {e}")
-
-    return bigquery_client
+        return None
 
 
 def authenticate_gcs(project_id):
@@ -65,7 +67,8 @@ def authenticate_gcs(project_id):
     try:
         storage_client = storage.Client(project=project_id)
         print("Google Cloud Storage client initialized!")
+        return storage_client
+
     except Exception as e:
         print(f"Google Cloud Storage authentication failed with error: {e}")
-
-    return storage_client
+        return None

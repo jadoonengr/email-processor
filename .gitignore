@@ -4,3 +4,4 @@ __init__*.py
 credentials.json
 token.json*
 *.log
+*.pdf
