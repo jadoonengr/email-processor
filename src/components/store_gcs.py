@@ -1,10 +1,15 @@
 import os
 import mimetypes
 import base64
+import logging
 from typing import Optional
 import datetime
 
 from src.utils.file_utils import sanitize_filename
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def upload_attachment_to_gcs(
@@ -36,5 +41,5 @@ def upload_attachment_to_gcs(
         return qualified_blob_name
 
     except Exception as e:
-        print(f"  ✗ Upload failed for {file_name}: {e}")
+        logger.error(f"  ✗ Upload failed for {file_name}: {e}")
         return None

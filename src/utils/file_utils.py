@@ -1,7 +1,12 @@
 import base64
 import os
+import logging
 from email.utils import parsedate_to_datetime
 from datetime import datetime
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def decode_base64(data_b64: str) -> bytes:

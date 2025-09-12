@@ -2,11 +2,16 @@ import os
 import json
 import base64
 import re
+import logging
 from datetime import datetime
 from googleapiclient.discovery import build
 from typing import Dict, Any, List
 
 from src.components.store_gcs import upload_attachment_to_gcs
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def extract_email_body(payload):
@@ -47,7 +52,6 @@ def parse_email_date(date_str):
         return dt.isoformat()
     except:
         return datetime.now().isoformat()
-
 
 
 def extract_attachments(
@@ -163,10 +167,10 @@ def list_unread_emails(
         )
 
         messages = results.get("messages", [])
-        print(f"📧 Found {len(messages)} unread emails")
+        logger.info(f"📧 Found {len(messages)} unread emails")
 
         return messages
 
     except Exception as error:
-        print(f"❌ Error fetching emails: {error}")
+        logger.error(f"❌ Error fetching emails: {error}")
         return []

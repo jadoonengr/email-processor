@@ -1,3 +1,4 @@
+import logging
 from googleapiclient.discovery import build
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -18,12 +19,16 @@ gcloud pubsub topics add-iam-policy-binding email-notifier \
     --role=roles/pubsub.publisher
 """
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def setup_gmail_push_notifications(service, user_id="me"):
+
+def setup_gmail_push_notifications(
+    service,
+    user_id="me",
+):
     """Set up Gmail push notifications to Pub/Sub topic"""
-
-    # service = build("gmail", "v1", credentials=credentials)
-
     # Configure the push notification request
     request_body = {
         "labelIds": ["INBOX"],  # Monitor specific labels
@@ -33,7 +38,9 @@ def setup_gmail_push_notifications(service, user_id="me"):
     # Start watching for changes
     result = service.users().watch(userId=user_id, body=request_body).execute()
 
-    print(f"Push notification setup successful. History ID: {result['historyId']}")
+    logger.info(
+        f"Push notification setup successful. History ID: {result['historyId']}"
+    )
     return result
 
 
@@ -43,4 +50,4 @@ def stop_gmail_push_notifications(service, user_id="me"):
     # service = build("gmail", "v1", credentials=credentials)
 
     service.users().stop(userId=user_id).execute()
-    print("Push notifications stopped")
+    logger.info("Push notifications stopped")

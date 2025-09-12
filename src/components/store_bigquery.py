@@ -1,4 +1,15 @@
-def store_emails_in_bigquery(bigquery_client, table_ref, email):
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+def store_emails_in_bigquery(
+    bigquery_client,
+    table_ref,
+    email,
+):
     """
     Store email data in BigQuery.
 
@@ -7,7 +18,7 @@ def store_emails_in_bigquery(bigquery_client, table_ref, email):
         emails: List of parsed email dictionaries
     """
     if not email:
-        print("⚠ No email to store")
+        logger.info("⚠ No email to store")
         return False
 
     try:
@@ -35,12 +46,12 @@ def store_emails_in_bigquery(bigquery_client, table_ref, email):
         errors = bigquery_client.insert_rows_json(table_ref, rows_to_insert)
 
         if errors:
-            print(f"❌ BigQuery insertion errors: {errors}")
+            logger.warning(f"❌ BigQuery insertion errors: {errors}")
             return False
         else:
-            print(f"✓ Stored email ({email['subject']}) in BigQuery")
+            logger.info(f"✓ Stored email ({email['subject']}) in BigQuery")
             return True
 
     except Exception as e:
-        print(f"❌ Error storing email in BigQuery: {e}")
+        logger.error(f"❌ Error storing email in BigQuery: {e}")
         return False
