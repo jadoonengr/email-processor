@@ -10,6 +10,10 @@ from src.components.auth_services import (
     authenticate_bigquery,
     authenticate_gcs,
 )
+from src.components.setup_gmail_notifications import (
+    setup_gmail_push_notifications,
+    stop_gmail_push_notifications,
+)
 from src.components.process_emails import list_unread_emails, read_email
 from src.components.store_gcs import upload_attachment_to_gcs
 from src.components.store_bigquery import store_emails_in_bigquery
@@ -43,6 +47,17 @@ def process_email(cloud_event):
         gmail_service = authenticate_gmail()
         bigquery_client = authenticate_bigquery(PROJECT_ID)
         storage_client = authenticate_gcs(PROJECT_ID)
+        if not gmail_service or not bigquery_client or not storage_client:
+            print("One or more services failed to initialize. Exiting function.")
+            return
+        else:
+            print("All services initialized successfully.")
+
+        # Setup Gmail push notifications (if needed)
+        setup_gmail_push_notifications(gmail_service, user_id="me")
+        # stop_gmail_push_notifications(gmail_service, user_id="me")
+
+        print(f"Function triggered at {datetime.utcnow().isoformat()}Z")
 
         # Fetch unread emails list
         emails = list_unread_emails(

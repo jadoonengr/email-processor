@@ -1,6 +1,8 @@
 __init__*.py
 /env
 *__pycache__*
+*.pytest_cache*
+.vscode
 credentials.json
 token.json*
 *.log
