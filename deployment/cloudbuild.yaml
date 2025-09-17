@@ -1,0 +1,239 @@
+#!/bin/bash
+# setup_cloud_build.sh - Script to set up Cloud Build triggers and permissions
+
+set -e
+
+# Configuration
+PROJECT_ID="alpine-comfort-470817-s8"
+REGION="us-central1"
+REPO_OWNER="jadoonengr"
+REPO_NAME="email-processor"
+SERVICE_ACCOUNT_EMAIL="email-notifier-dev-sa@${PROJECT_ID}.iam.gserviceaccount.com"
+
+echo "Setting up Cloud Build for Gmail Processor project..."
+
+# Set the project
+gcloud config set project $PROJECT_ID
+
+# Enable required APIs
+echo "Enabling required APIs..."
+gcloud services enable cloudbuild.googleapis.com
+gcloud services enable cloudfunctions.googleapis.com
+gcloud services enable bigquery.googleapis.com
+gcloud services enable storage.googleapis.com
+gcloud services enable pubsub.googleapis.com
+gcloud services enable secretmanager.googleapis.com
+
+# Grant Cloud Build service account necessary roles
+CLOUD_BUILD_SA="${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+CLOUD_BUILD_SA="${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+
+echo "Granting permissions to Cloud Build service account: $CLOUD_BUILD_SA"
+
+# Grant roles to Cloud Build service account
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$CLOUD_BUILD_SA" \
+    --role="roles/cloudfunctions.admin"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$CLOUD_BUILD_SA" \
+    --role="roles/bigquery.admin"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$CLOUD_BUILD_SA" \
+    --role="roles/storage.admin"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$CLOUD_BUILD_SA" \
+    --role="roles/pubsub.admin"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$CLOUD_BUILD_SA" \
+    --role="roles/iam.serviceAccountUser"
+
+# Allow Cloud Build to impersonate the application service account
+gcloud iam service-accounts add-iam-policy-binding \
+    $SERVICE_ACCOUNT_EMAIL \
+    --member="serviceAccount:$CLOUD_BUILD_SA" \
+    --role="roles/iam.serviceAccountTokenCreator"
+
+# Create build triggers
+echo "Creating Cloud Build triggers..."
+
+# Production trigger (main branch)
+gcloud builds triggers create github \
+    --repo-name=$REPO_NAME \
+    --repo-owner=$REPO_OWNER \
+    --branch-pattern="^main$" \
+    --build-config=cloudbuild.yaml \
+    --description="Production deployment trigger" \
+    --name="gmail-processor-prod" || echo "Production trigger might already exist"
+
+# Development trigger (develop branch)
+gcloud builds triggers create github \
+    --repo-name=$REPO_NAME \
+    --repo-owner=$REPO_OWNER \
+    --branch-pattern="^develop$" \
+    --build-config=cloudbuild-dev.yaml \
+    --description="Development deployment trigger" \
+    --name="gmail-processor-dev" || echo "Development trigger might already exist"
+
+# Pull request trigger (testing)
+gcloud builds triggers create github \
+    --repo-name=$REPO_NAME \
+    --repo-owner=$REPO_OWNER \
+    --pull-request-pattern="^main$" \
+    --build-config=cloudbuild-test.yaml \
+    --comment-control=COMMENTS_ENABLED \
+    --description="Pull request testing trigger" \
+    --name="gmail-processor-pr" || echo "PR trigger might already exist"
+
+echo "Cloud Build setup completed!"
+echo ""
+echo "Next steps:"
+echo "1. Connect your GitHub repository to Cloud Build in the Google Cloud Console"
+echo "2. Update REPO_OWNER and REPO_NAME variables in this script"
+echo "3. Push your code to trigger the first build"
+echo "4. Check build status: gcloud builds list"
+
+---
+
+#!/bin/bash
+# manual_deploy.sh - Manual deployment script (alternative to Cloud Build)
+
+set -e
+
+PROJECT_ID="alpine-comfort-470817-s8"
+REGION="us-central1"
+SERVICE_ACCOUNT_EMAIL="email-notifier-dev-sa@${PROJECT_ID}.iam.gserviceaccount.com"
+
+echo "Manual deployment of Gmail Processor..."
+
+# Set project
+gcloud config set project $PROJECT_ID
+
+# Run tests locally
+echo "Running tests..."
+python -m pytest tests/ -v
+
+# Deploy using gcloud builds submit (local build)
+echo "Starting Cloud Build..."
+gcloud builds submit \
+    --config=cloudbuild.yaml \
+    --substitutions=_REGION=$REGION,_SERVICE_ACCOUNT_EMAIL=$SERVICE_ACCOUNT_EMAIL \
+    .
+
+echo "Deployment completed!"
+
+---
+
+#!/bin/bash
+# local_development.sh - Set up local development environment
+
+set -e
+
+echo "Setting up local development environment..."
+
+# Create virtual environment
+python3.11 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install --upgrade pip
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+
+# Install pre-commit hooks
+pre-commit install
+
+# Create necessary directories
+mkdir -p logs
+mkdir -p tests
+mkdir -p schema
+
+# Set up environment variables
+cat > .env << EOF
+# Local development environment variables
+PROJECT_ID=alpine-comfort-470817-s8
+DATASET_NAME=gmail_data
+TABLE_NAME=email_messages
+BUCKET_NAME=gmail-attachments-bucket-2fba
+PUBSUB_TOPIC=gmail-notifications
+PUBSUB_SUBSCRIPTION=gmail-notifications-sub
+REGION=us-central1
+ENVIRONMENT=development
+
+# Service account (for local testing - use a test service account)
+GOOGLE_APPLICATION_CREDENTIALS=./test-service-account.json
+EOF
+
+echo "Local development environment set up!"
+echo ""
+echo "Next steps:"
+echo "1. Activate virtual environment: source venv/bin/activate"
+echo "2. Download test service account key to test-service-account.json"
+echo "3. Update .env file with your specific values"
+echo "4. Run tests: pytest"
+echo "5. Start local development: functions-framework --target=gmail_reader_http"
+
+---
+
+#!/bin/bash
+# test_deployment.sh - Test the deployed functions
+
+set -e
+
+PROJECT_ID="alpine-comfort-470817-s8"
+REGION="us-central1"
+FUNCTION_NAME_HTTP="gmail-reader-http"
+
+echo "Testing deployed Gmail Processor functions..."
+
+# Get HTTP function URL
+HTTP_URL=$(gcloud functions describe $FUNCTION_NAME_HTTP \
+    --region=$REGION \
+    --format="value(serviceConfig.uri)")
+
+echo "HTTP Function URL: $HTTP_URL"
+
+# Test HTTP function with curl
+echo "Testing HTTP function..."
+curl -X POST \
+    -H "Content-Type: application/json" \
+    -d '{
+        "user_email": "test@example.com",
+        "criteria": {
+            "mark_as_read": false,
+            "max_results": 5
+        }
+    }' \
+    "$HTTP_URL" || echo "HTTP test completed (may fail if no Gmail access)"
+
+# Test Pub/Sub function by publishing a message
+echo "Testing Pub/Sub function..."
+gcloud pubsub topics publish gmail-notifications \
+    --message='{"emailAddress": "test@example.com", "historyId": "123456"}' || echo "Pub/Sub test completed"
+
+# Check function logs
+echo "Recent HTTP function logs:"
+gcloud functions logs read $FUNCTION_NAME_HTTP --region=$REGION --limit=10
+
+echo "Testing completed!"
+
+---
+
+# cloudbuild-test.yaml - Test-only build (for PRs)
+steps:
+  # Install and test
+  - name: 'python:3.11-slim'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        pip install --no-cache-dir -r requirements.txt
+        pip install -r requirements-dev.txt
+        
+        # Code quality checks
+        black --check --diff .
+        flake8 . --count --select=E9,F63,F7,F82 
