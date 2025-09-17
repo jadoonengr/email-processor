@@ -1,3 +1,13 @@
+
+# Step 1: Enable GCP Services
+# =====================================================
+gcloud services enable gmail.googleapis.com \
+  cloudfunctions.googleapis.com \
+  pubsub.googleapis.com \
+  storage.googleapis.com \
+  bigquery.googleapis.com
+
+
 # Step 1: Create Big Query Table
 # =====================================================
 
@@ -74,3 +84,20 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:$SERVICE_ACCOUNT_EMAIL" \
     --role="roles/pubsub.editor"
+
+
+# Step 3: Deploy Code
+# =====================================================
+gcloud functions deploy process_email \
+  --runtime python310 \
+  --trigger-topic YOUR_PUBSUB_TOPIC_NAME \
+  --entry-point process_email \
+  --source . \
+  --region YOUR_REGION \
+  --project YOUR_PROJECT_ID
+
+
+# Step 3: Test Deployment
+# =====================================================
+gcloud pubsub topics publish email-notifier \
+  --message '{"emailAddress": "jadoon.engr@gmail.com", "messageId": "abc123"}'
