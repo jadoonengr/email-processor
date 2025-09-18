@@ -43,11 +43,11 @@ def process_email(cloud_event):
     """
     try:
         # The Pub/Sub message contains the user and message ID
-        # raw_email_data_b64 = cloud_event.data["message"]["data"]
-        # raw_email_data = decode_base64(raw_email_data_b64)
-        # message = json.loads(raw_email_data)
-        # user_id = message.get("emailAddress")
+        event_data_b64 = cloud_event.data["message"]["data"]
+        event_data = decode_base64(event_data_b64)
+        logger.warning(event_data)
 
+        logger.info("==============RUNNING CLOUD FUNCTION NOW==============")
         logger.info(
             f"Starting application. Function triggered at {datetime.now().isoformat()}Z"
         )
@@ -74,7 +74,12 @@ def process_email(cloud_event):
             max_results=100,
         )
 
-        if emails:
+        if not emails:
+            logger.warning("📭 No unread emails found.")
+
+        else:
+            logger.warning(f"Found {len(emails)} unread messages.")
+
             for i, email in enumerate(emails, 1):
                 logger.info(
                     f"\n[{i}/{len(emails)}] Processing message {email['id'][:8]}..."
@@ -119,8 +124,6 @@ def process_email(cloud_event):
                 table_ref = f"{PROJECT_ID}.{BIGQUERY_DATASET}.{BIGQUERY_TABLE}"
                 store_emails_in_bigquery(bigquery_client, table_ref, extracted_email)
                 logger.info(f"\n✅ Processing completed successfully!")
-        else:
-            logger.warning("📭 No unread emails found.")
 
     except Exception as e:
         logger.error(f"An unexpected error occurred: {e}")

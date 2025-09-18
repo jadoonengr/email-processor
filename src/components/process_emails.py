@@ -136,6 +136,16 @@ def read_email(gmail_service, email) -> Dict[str, Any]:
     # Extract attachments
     attachments = extract_attachments(gmail_service, message)
 
+    # Mark email as read
+    gmail_service.users().messages().modify(
+        userId="me", id=email["id"], body={"removeLabelIds": ["UNREAD"]}
+    ).execute()
+
+    # message.modify(
+    #     userId="me", id=email["id"], body={"removeLabelIds": ["UNREAD"]}
+    # ).execute()
+    print("✅ Marked as read.")
+
     return {
         "message_id": message["id"],
         "thread_id": message.get("threadId", ""),
