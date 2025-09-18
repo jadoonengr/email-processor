@@ -15,13 +15,17 @@ from src.components.setup_gmail_notifications import (
     setup_gmail_push_notifications,
     stop_gmail_push_notifications,
 )
-from src.components.process_emails import list_unread_emails, read_email
+from src.components.process_emails import (
+    list_unread_emails,
+    read_email,
+    mark_email_read,
+)
 from src.components.store_gcs import upload_attachment_to_gcs
 from src.components.store_bigquery import store_emails_in_bigquery
 
 # --- Configuration ---
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, force=True)
 logger = logging.getLogger(__name__)
 
 # Configuration parameters
@@ -45,9 +49,9 @@ def process_email(cloud_event):
         # The Pub/Sub message contains the user and message ID
         event_data_b64 = cloud_event.data["message"]["data"]
         event_data = decode_base64(event_data_b64)
-        logger.warning(event_data)
+        logger.info(event_data)
 
-        logger.info("==============RUNNING CLOUD FUNCTION NOW==============")
+        logger.info("==============RUNNING CLOUD FUNCTION==============")
         logger.info(
             f"Starting application. Function triggered at {datetime.now().isoformat()}Z"
         )
@@ -65,7 +69,7 @@ def process_email(cloud_event):
             logger.info("All services initialized successfully.")
 
         # Setup Gmail push notifications (if needed)
-        setup_gmail_push_notifications(gmail_service, user_id="me")
+        setup_gmail_push_notifications(gmail_service)
         # stop_gmail_push_notifications(gmail_service, user_id="me")
 
         # Fetch unread emails list
@@ -86,7 +90,7 @@ def process_email(cloud_event):
                 )
 
                 # Read and process each email
-                extracted_email = read_email(gmail_service, email)
+                extracted_email = read_email(gmail_service, email["id"])
 
                 # Store attachments to GCS
                 attachments = extracted_email.get("attachments", [])
@@ -96,7 +100,9 @@ def process_email(cloud_event):
                     file_data = attachment["file_data"]
                     file_type = attachment["file_type"]
 
-                    if file_data:
+                    if not file_data:
+                        logger.warning(f"  ⚠ No data for attachment: {file_name}")
+                    else:
                         gcs_url = upload_attachment_to_gcs(
                             storage_client,
                             GCS_BUCKET_NAME,
@@ -117,13 +123,14 @@ def process_email(cloud_event):
                             logger.warning(
                                 f"  ⚠ Failed to upload attachment: {file_name}"
                             )
-                    else:
-                        logger.warning(f"  ⚠ No data for attachment: {file_name}")
 
                 # Store email to BigQuery
                 table_ref = f"{PROJECT_ID}.{BIGQUERY_DATASET}.{BIGQUERY_TABLE}"
                 store_emails_in_bigquery(bigquery_client, table_ref, extracted_email)
                 logger.info(f"\n✅ Processing completed successfully!")
+
+                # Mark email as read
+                mark_email_read(gmail_service, email["id"])
 
     except Exception as e:
         logger.error(f"An unexpected error occurred: {e}")

@@ -8,7 +8,7 @@ import datetime
 from src.utils.file_utils import sanitize_filename
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, force=True)
 logger = logging.getLogger(__name__)
 
 

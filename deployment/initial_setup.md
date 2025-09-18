@@ -88,13 +88,15 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
 # Step 3: Deploy Code
 # =====================================================
-gcloud functions deploy process_email \
-  --runtime python310 \
-  --trigger-topic YOUR_PUBSUB_TOPIC_NAME \
-  --entry-point process_email \
-  --source . \
-  --region YOUR_REGION \
-  --project YOUR_PROJECT_ID
+gcloud functions deploy email-processor \
+    --gen2 \
+    --runtime=python312 \
+    --source=. \
+    --entry-point=process_email \
+    --trigger-topic=email-notifier \
+    --memory=512MB \
+    --timeout=60s \
+    --region=us-central1  
 
 
 # Step 3: Test Deployment

@@ -4,13 +4,14 @@ import base64
 import re
 import logging
 from datetime import datetime
+from email.utils import parsedate_to_datetime
 from googleapiclient.discovery import build
 from typing import Dict, Any, List
 
 from src.components.store_gcs import upload_attachment_to_gcs
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, force=True)
 logger = logging.getLogger(__name__)
 
 
@@ -46,8 +47,6 @@ def extract_email_body(payload):
 def parse_email_date(date_str):
     """Parse email date string to ISO format."""
     try:
-        from email.utils import parsedate_to_datetime
-
         dt = parsedate_to_datetime(date_str)
         return dt.isoformat()
     except:
@@ -120,13 +119,21 @@ def extract_attachments(
     return attachments
 
 
-def read_email(gmail_service, email) -> Dict[str, Any]:
+def mark_email_read(gmail_service, message_id):
+    # Mark email as read
+    gmail_service.users().messages().modify(
+        userId="me", id=message_id, body={"removeLabelIds": ["UNREAD"]}
+    ).execute()
+    logger.info("✅ Marked as read.")
+
+
+def read_email(gmail_service, message_id) -> Dict[str, Any]:
     """Extract and return Gmail message with attachments"""
     # Get full message
     message = (
         gmail_service.users()
         .messages()
-        .get(userId="me", id=email["id"], format="full")
+        .get(userId="me", id=message_id, format="full")
         .execute()
     )
 
@@ -135,16 +142,6 @@ def read_email(gmail_service, email) -> Dict[str, Any]:
 
     # Extract attachments
     attachments = extract_attachments(gmail_service, message)
-
-    # Mark email as read
-    gmail_service.users().messages().modify(
-        userId="me", id=email["id"], body={"removeLabelIds": ["UNREAD"]}
-    ).execute()
-
-    # message.modify(
-    #     userId="me", id=email["id"], body={"removeLabelIds": ["UNREAD"]}
-    # ).execute()
-    print("✅ Marked as read.")
 
     return {
         "message_id": message["id"],

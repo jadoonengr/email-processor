@@ -11,7 +11,7 @@ from src.config import config, ENV
 
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, force=True)
 logger = logging.getLogger(__name__)
 
 
@@ -37,15 +37,18 @@ def authenticate_gmail():
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
+                logger.info("Refreshed existing credentials")
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
                     credentials_file_path, GMAIL_SCOPES
                 )
                 creds = flow.run_local_server(port=0)
+                logger.info("Successfully authorized new credentials")
 
             # Save credentials for next run
             with open(token_file, "w") as token:
                 token.write(creds.to_json())
+                logger.info("Credentials saved to token.json")
 
         gmail_service = build("gmail", "v1", credentials=creds)
         logger.info("Gmail authentication successful!")
