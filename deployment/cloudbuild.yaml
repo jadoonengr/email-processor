@@ -28,16 +28,16 @@ steps:
       - '-c'
       - |
         # Validate Cloud Function deployment files
-        gcloud functions deploy gmail-reader-http \
+        gcloud functions deploy email-processor \
           --dry-run \
           --gen2 \
           --runtime python311 \
           --source . \
-          --entry-point gmail_reader_http \
-          --trigger-http \
+          --entry-point ${_FUNCTION_NAME} \
+          --trigger-topic ${_PUBSUB_TOPIC} \
           --region ${_REGION} \
-          --project ${PROJECT_ID} \
-          --service-account ${_SERVICE_ACCOUNT_EMAIL}
+          --project ${_PROJECT_ID} \
+          --service-account ${_SERVICE_ACCOUNT_EMAIL}  
         
         echo "Validation completed successfully"
     id: 'validate'
@@ -49,17 +49,17 @@ steps:
       - '-c'
       - |
         # Check and create dataset
-        if ! bq show ${PROJECT_ID}:${_DATASET_NAME} > /dev/null 2>&1; then
+        if ! bq show ${_PROJECT_ID}:${_DATASET_NAME} > /dev/null 2>&1; then
           echo "Creating BigQuery dataset: ${_DATASET_NAME}"
-          bq mk --location=${_BQ_LOCATION} --dataset ${PROJECT_ID}:${_DATASET_NAME}
+          bq mk --location=${_BQ_LOCATION} --dataset ${_PROJECT_ID}:${_DATASET_NAME}
         else
           echo "Dataset ${_DATASET_NAME} already exists"
         fi
         
         # Check and create table
-        if ! bq show ${PROJECT_ID}:${_DATASET_NAME}.${_TABLE_NAME} > /dev/null 2>&1; then
+        if ! bq show ${_PROJECT_ID}:${_DATASET_NAME}.${_TABLE_NAME} > /dev/null 2>&1; then
           echo "Creating BigQuery table: ${_TABLE_NAME}"
-          bq mk --table ${PROJECT_ID}:${_DATASET_NAME}.${_TABLE_NAME} schema/email_messages_schema.json
+          bq mk --table ${_PROJECT_ID}:${_DATASET_NAME}.${_TABLE_NAME} schema/email_messages_schema.json
         else
           echo "Table ${_TABLE_NAME} already exists"
         fi
@@ -110,32 +110,12 @@ steps:
         fi
     id: 'setup-pubsub'
 
-  # Step 6: Deploy HTTP-triggered Cloud Function
+  # Step 6: Deploy Pub/Sub-triggered Cloud Function
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     args:
       - 'functions'
       - 'deploy'
-      - '${_FUNCTION_NAME_HTTP}'
-      - '--gen2'
-      - '--runtime=python311'
-      - '--source=.'
-      - '--entry-point=gmail_reader_http'
-      - '--trigger-http'
-      - '--allow-unauthenticated'
-      - '--region=${_REGION}'
-      - '--service-account=${_SERVICE_ACCOUNT_EMAIL}'
-      - '--set-env-vars=PROJECT_ID=${PROJECT_ID},DATASET_NAME=${_DATASET_NAME},TABLE_NAME=${_TABLE_NAME},BUCKET_NAME=${_BUCKET_NAME}'
-      - '--memory=1GB'
-      - '--timeout=540s'
-      - '--max-instances=10'
-    id: 'deploy-http-function'
-
-  # Step 7: Deploy Pub/Sub-triggered Cloud Function
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
-    args:
-      - 'functions'
-      - 'deploy'
-      - '${_FUNCTION_NAME_PUBSUB}'
+      - '${_FUNCTION_NAME}'
       - '--gen2'
       - '--runtime=python311'
       - '--source=.'
@@ -143,7 +123,7 @@ steps:
       - '--trigger-topic=${_PUBSUB_TOPIC}'
       - '--region=${_REGION}'
       - '--service-account=${_SERVICE_ACCOUNT_EMAIL}'
-      - '--set-env-vars=PROJECT_ID=${PROJECT_ID},DATASET_NAME=${_DATASET_NAME},TABLE_NAME=${_TABLE_NAME},BUCKET_NAME=${_BUCKET_NAME}'
+      - '--set-env-vars=PROJECT_ID=${_PROJECT_ID},DATASET_NAME=${_DATASET_NAME},TABLE_NAME=${_TABLE_NAME},BUCKET_NAME=${_BUCKET_NAME}'
       - '--memory=1GB'
       - '--timeout=540s'
       - '--max-instances=5'
@@ -157,12 +137,8 @@ steps:
       - |
         echo "Running deployment verification..."
         
-        # Test HTTP function
-        FUNCTION_URL=$(gcloud functions describe ${_FUNCTION_NAME_HTTP} --region=${_REGION} --format="value(serviceConfig.uri)")
-        echo "HTTP Function URL: $FUNCTION_URL"
-        
         # Test Pub/Sub function
-        gcloud functions describe ${_FUNCTION_NAME_PUBSUB} --region=${_REGION}
+        gcloud functions describe ${_FUNCTION_NAME} --region=${_REGION}
         
         echo "Deployment verification completed"
     id: 'verify-deployment'
@@ -170,6 +146,7 @@ steps:
 # Substitution variables
 substitutions:
   # Core settings
+  _PROJECT_ID: 'alpine-comfort-470817-s8'
   _REGION: 'us-central1'
   _BQ_LOCATION: 'US'
   
@@ -177,19 +154,18 @@ substitutions:
   _SERVICE_ACCOUNT_EMAIL: 'email-notifier-dev-sa@alpine-comfort-470817-s8.iam.gserviceaccount.com'
   
   # BigQuery
-  _DATASET_NAME: 'gmail_data'
-  _TABLE_NAME: 'email_messages'
+  _DATASET_NAME: 'idp'
+  _TABLE_NAME: 'gmail_raw_emails'
   
   # Cloud Storage
   _BUCKET_NAME: 'gmail-attachments-bucket-2fba'
   
   # Pub/Sub
-  _PUBSUB_TOPIC: 'gmail-notifications'
-  _PUBSUB_SUBSCRIPTION: 'gmail-notifications-sub'
+  _PUBSUB_TOPIC: 'gmail-notifier'
+  _PUBSUB_SUBSCRIPTION: 'gmail-notifier-sub'
   
   # Cloud Functions
-  _FUNCTION_NAME_HTTP: 'gmail-reader-http'
-  _FUNCTION_NAME_PUBSUB: 'gmail-reader-pubsub'
+  _FUNCTION_NAME: 'email-processor'
 
 # Build options
 options:
@@ -201,7 +177,7 @@ options:
   
   # Use custom worker pool if available
   # pool:
-  #   name: 'projects/${PROJECT_ID}/locations/${_REGION}/workerPools/gmail-build-pool'
+  #   name: 'projects/${_PROJECT_ID}/locations/${_REGION}/workerPools/gmail-build-pool'
 
 # Build timeout (set at root level)
 timeout: '1200s'
