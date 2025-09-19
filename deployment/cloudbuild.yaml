@@ -119,7 +119,7 @@ steps:
       - '--gen2'
       - '--runtime=python311'
       - '--source=.'
-      - '--entry-point=gmail_reader_pubsub'
+      - '--entry-point=${_FUNCTION_NAME}'
       - '--trigger-topic=${_PUBSUB_TOPIC}'
       - '--region=${_REGION}'
       - '--service-account=${_SERVICE_ACCOUNT_EMAIL}'
@@ -129,7 +129,7 @@ steps:
       - '--max-instances=5'
     id: 'deploy-pubsub-function'
 
-  # Step 8: Run deployment verification tests
+  # Step 7: Run deployment verification tests
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     entrypoint: 'bash'
     args:

@@ -101,6 +101,11 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
 # Step 7: Deployment Settings
 # =====================================================
+# Grant Cloud Build permissions to write logs
+gcloud projects add-iam-policy-binding $(gcloud config get-value project) \
+    --member=serviceAccount:email-notifier-dev-sa@$PROJECT_ID.iam.gserviceaccount.com \
+    --role=roles/logging.logWriter
+
 # Grant Cloud Build permissions to deploy functions
 gcloud projects add-iam-policy-binding $(gcloud config get-value project) \
     --member=serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com \
