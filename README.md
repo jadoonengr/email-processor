@@ -6,15 +6,43 @@ A robust Python application for processing Gmail emails, extracting attachments,
 ![Google Cloud](https://img.shields.io/badge/Google%20Cloud-Platform-blue.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 
-## 🚀 Features
+## 🚀 Tech Stack Summary
 
+| **Category** | **Technology** | **Purpose** |
+|--------------|----------------|-------------|
+| **Language** | Python 3.11 | Primary programming language |
+| **Compute** | Google Cloud Functions Gen 2 | Serverless email processing |
+| **Database** | Google BigQuery | Raw email storage |
+| **Storage** | Google Cloud Storage | Email attachments storage |
+| **Messaging** | Google Cloud Pub/Sub | Event-driven notifications |
+| **Security** | Google Secret Manager | OAuth token storage |
+| **Authentication** | OAuth 2.0 + Gmail API | Gmail access |
+| **Scheduling** | Google Cloud Scheduler | Watch renewal automation |
+| **CI/CD** | Google Cloud Build | Automated deployment |
+| **Version Control** | GitHub | Code repository |
+| **Monitoring** | Cloud Logging/Monitoring | Observability |
+
+## Key Python Libraries
+
+| **Library** | **Purpose** |
+|-------------|-------------|
+| `functions-framework` | Cloud Functions runtime |
+| `google-api-python-client` | Gmail API integration |
+| `google-auth` | Google authentication |
+| `google-cloud-bigquery` | Database operations |
+| `google-cloud-storage` | Storage operations |
+| `google-cloud-pubsub` | Message handling |
+| `google-cloud-secret-manager` | Credential management |
+
+## Architecture Pattern
+**Event-Driven Serverless**: Gmail → Pub/Sub → Cloud Functions → Business Logic
 - **Gmail API Integration**: Secure OAuth2 authentication with Gmail
 - **Email Processing**: Extract email content, headers, and metadata  
 - **Attachment Management**: Download and upload attachments to Google Cloud Storage
 - **BigQuery Storage**: Store processed email data in BigQuery for analytics
 - **Cloud Function Ready**: Designed to run as serverless Google Cloud Functions
 - **Error Handling**: Comprehensive error handling and logging
-- **Scalable Architecture**: Class-based design for maintainability and testing
+- **Scalable Architecture**: Efficient design for maintainability and testing
 
 ## 📋 Table of Contents
 
