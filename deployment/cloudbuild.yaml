@@ -196,9 +196,6 @@ options:
   # Use higher CPU for faster builds
   machineType: 'E2_HIGHCPU_8'
   
-  # Increase build timeout
-  timeout: '1200s'
-  
   # Enable detailed logging
   logging: CLOUD_LOGGING_ONLY
   
@@ -206,7 +203,7 @@ options:
   # pool:
   #   name: 'projects/${PROJECT_ID}/locations/${_REGION}/workerPools/gmail-build-pool'
 
-# Build timeout
+# Build timeout (set at root level)
 timeout: '1200s'
 
 # ---
