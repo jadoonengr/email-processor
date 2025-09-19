@@ -9,6 +9,7 @@ gcloud services enable gmail.googleapis.com
 gcloud services enable cloudbuild.googleapis.com
 gcloud services enable secretmanager.googleapis.com
 gcloud services enable artifactregistry.googleapis.com
+gcloud services enable cloudresourcemanager.googleapis.com
 
 
 # Step 2: Create Project
