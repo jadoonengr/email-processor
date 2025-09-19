@@ -112,7 +112,9 @@ steps:
 
   # Step 6: Deploy Pub/Sub-triggered Cloud Function
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
+    entrypoint: 'bash'
     args:
+      - gcloud
       - 'functions'
       - 'deploy'
       - '${_FUNCTION_NAME}'
@@ -127,7 +129,7 @@ steps:
       - '--memory=1GB'
       - '--timeout=540s'
       - '--max-instances=5'
-    id: 'deploy-pubsub-function'
+    id: 'deploy-cloud-function'
 
   # Step 7: Run deployment verification tests
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
