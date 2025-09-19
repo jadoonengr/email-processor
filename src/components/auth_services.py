@@ -26,31 +26,34 @@ def authenticate_gmail():
     credentials_file_path = f"{parent_directory}/{CREDENTIALS_FILE}"
 
     try:
-        creds = None
+        token_obj = None
         token_file = "token.json"
 
         # Load existing credentials
-        if os.path.exists(token_file):
-            creds = Credentials.from_authorized_user_file(token_file, GMAIL_SCOPES)
+        if not os.path.exists(token_file):
+            logger.error("❌ token.json not found! Run the OAuth setup first.")
+            return None
+        else:
+            token_obj = Credentials.from_authorized_user_file(token_file, GMAIL_SCOPES)
 
         # If there are no valid credentials, request authorization
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
+        if not token_obj or not token_obj.valid:
+            if token_obj and token_obj.expired and token_obj.refresh_token:
+                token_obj.refresh(Request())
                 logger.info("Refreshed existing credentials")
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
                     credentials_file_path, GMAIL_SCOPES
                 )
-                creds = flow.run_local_server(port=0)
+                token_obj = flow.run_local_server(port=0)
                 logger.info("Successfully authorized new credentials")
 
             # Save credentials for next run
             with open(token_file, "w") as token:
-                token.write(creds.to_json())
+                token.write(token_obj.to_json())
                 logger.info("Credentials saved to token.json")
 
-        gmail_service = build("gmail", "v1", credentials=creds)
+        gmail_service = build("gmail", "v1", credentials=token_obj)
         logger.info("Gmail authentication successful!")
         return gmail_service
 
