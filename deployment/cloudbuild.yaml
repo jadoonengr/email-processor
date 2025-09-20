@@ -12,7 +12,7 @@ steps:
         pip install pytest pytest-cov flake8 black
         
         # Code formatting check
-        black .
+        black --check --diff .
         
         # Linting
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -167,7 +167,7 @@ substitutions:
   _PUBSUB_SUBSCRIPTION: 'gmail-notifier-sub'
   
   # Cloud Functions
-  _FUNCTION_NAME: 'email-processor'
+  _FUNCTION_NAME: 'process_email'
 
 # Build options
 options:
