@@ -96,7 +96,7 @@ steps:
       - '-c'
       - |
         # Check if the token file exists
-        if [ ! -f "token.json" ]; then
+        if [ ! -f "../token.json" ]; then
           echo "Token file not found, skipping secret upload."
         else
           echo "Uploading new secret version to Secret Manager..."
