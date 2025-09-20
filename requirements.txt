@@ -16,6 +16,7 @@ google-auth==2.40.3
 google-auth-oauthlib==1.2.2
 google-cloud-bigquery==3.36.0
 google-cloud-core==2.4.3
+google-cloud-secret-manager==2.24.0
 google-cloud-storage==3.3.0
 google-crc32c==1.7.1
 google-resumable-media==2.7.2

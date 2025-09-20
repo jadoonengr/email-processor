@@ -89,18 +89,22 @@ steps:
         fi
     id: 'setup-pubsub'
 
-  # Step: Retrieve the secret and save it to the shared volume
+  # Step: Upload token to Secret Manager
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        gcloud secrets versions access latest --secret=$_SECRET_NAME > token.json
-    id: 'get-secret'
-    # Mount the volume to store the secret file
-    volumes:
-      - name: 'secret-volume'
-        path: '/secrets'
+        # Check if the token file exists
+        if [ ! -f "token.json" ]; then
+          echo "Token file not found, skipping secret upload."
+        else
+          echo "Uploading new secret version to Secret Manager..."
+          gcloud secrets versions add ${_SECRET_NAME} \
+            --data-file="token.json"
+          echo "Secret uploaded successfully."
+        fi
+    id: 'upload-secret'
 
   # Step: Deploy the Cloud Function 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
@@ -121,10 +125,6 @@ steps:
           --timeout=540s \
           --max-instances=5
     id: 'deploy-cloud-function'
-    # Access the token.json file
-    volumes:
-      - name: 'secret-volume'
-        path: '/secrets'
 
   # Step: Run deployment verification tests
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
@@ -164,7 +164,7 @@ substitutions:
   # Cloud Functions
   _FUNCTION_NAME: 'email-processor'
   _ENTRY_POINT: 'process_email'
-  _SECRET_NAME: 'email-proc-token-file'
+  _SECRET_NAME: 'email-processor-token'
 
 # Build options
 options:

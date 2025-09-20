@@ -1,4 +1,5 @@
 import os
+import json
 import logging
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -8,6 +9,7 @@ from google.cloud import bigquery
 from google.cloud import storage
 
 from src.config import config, ENV
+from src.utils.file_utils import download_secret, upload_secret
 
 
 # Configure logging
@@ -18,7 +20,9 @@ logger = logging.getLogger(__name__)
 def authenticate_gmail():
     """Authenticate with Gmail API using OAuth2."""
     # Load parameters
+    PROJECT_ID = config[ENV]["PROJECT_ID"]
     CREDENTIALS_FILE = config[ENV]["CREDENTIALS_FILE"]
+    SECRET_NAME = config[ENV]["SECRET_NAME"]
     GMAIL_SCOPES = [config[ENV]["GMAIL_SCOPES"]]
 
     current_directory = os.getcwd()
@@ -26,21 +30,25 @@ def authenticate_gmail():
     credentials_file_path = f"{parent_directory}/{CREDENTIALS_FILE}"
 
     try:
-        token_obj = None
-        token_file = "token.json"
-
-        # Load existing credentials
-        if not os.path.exists(token_file):
-            logger.error("❌ token.json not found! Run the OAuth setup first.")
-            return None
+        # Load token data from Secret Manager
+        token_data = download_secret(PROJECT_ID, SECRET_NAME)
+        if token_data:
+            token_value = json.loads(token_data)
         else:
-            token_obj = Credentials.from_authorized_user_file(token_file, GMAIL_SCOPES)
+            logger.error(
+                "❌ Unable to load token data from Secret Manager. Exiting function!"
+            )
+            return None
+
+        # Create Credentials object from the parsed JSON dictionary
+        token_obj = Credentials.from_authorized_user_info(token_value, GMAIL_SCOPES)
 
         # If there are no valid credentials, request authorization
         if not token_obj or not token_obj.valid:
             if token_obj and token_obj.expired and token_obj.refresh_token:
                 token_obj.refresh(Request())
                 logger.info("Refreshed existing credentials")
+
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
                     credentials_file_path, GMAIL_SCOPES
@@ -48,11 +56,11 @@ def authenticate_gmail():
                 token_obj = flow.run_local_server(port=0)
                 logger.info("Successfully authorized new credentials")
 
-            # Save credentials for next run
-            with open(token_file, "w") as token:
-                token.write(token_obj.to_json())
-                logger.info("Credentials saved to token.json")
+            if token_obj:
+                # Save refreshed credentials for next run
+                upload_secret(PROJECT_ID, SECRET_NAME, token_obj.to_json())
 
+        # Build the Gmail service
         gmail_service = build("gmail", "v1", credentials=token_obj)
         logger.info("Gmail authentication successful!")
         return gmail_service
