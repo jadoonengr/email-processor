@@ -1,10 +1,5 @@
 # cloudbuild.yaml - Main Cloud Build configuration
 
-# Define a volume to share the secret file between steps
-volumes:
-  - name: 'secret-volume'
-    path: '/workspace'
-
 # Build steps
 steps:
   # Step: Install dependencies and run tests
