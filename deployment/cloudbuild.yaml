@@ -89,7 +89,16 @@ steps:
         fi
     id: 'setup-pubsub'
 
-  # Step: Deploy Pub/Sub-triggered Cloud Function
+  # Step: Retrieve and Store Secret to a File
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud secrets versions access latest --secret=$_SECRET_NAME > token.json
+    id: 'get-secret'
+
+  # Step: Deploy Cloud Function
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     entrypoint: 'bash'
     args:
@@ -147,6 +156,7 @@ substitutions:
   # Cloud Functions
   _FUNCTION_NAME: 'email-processor'
   _ENTRY_POINT: 'process_email'
+  _SECRET_NAME: 'email-proc-token-file'
 
 # Build options
 options:
