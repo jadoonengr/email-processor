@@ -1,6 +1,11 @@
 # cloudbuild.yaml - Main Cloud Build configuration
-# This file should be placed in the root of your repository
 
+# Define a volume to share the secret file between steps
+volumes:
+  - name: 'secret-volume'
+    path: '/workspace'
+
+# Build steps
 steps:
   # Step: Install dependencies and run tests
   - name: 'python:3.11-slim'
@@ -97,12 +102,12 @@ steps:
       - |
         gcloud secrets versions access latest --secret=$_SECRET_NAME > token.json
     id: 'get-secret'
-    # Mount the volume to this step
+    # Mount the volume to store the secret file
     volumes:
       - name: 'secret-volume'
         path: '/workspace'
 
-  # Step: Deploy the Cloud Function with the token file from the shared volume
+  # Step: Deploy the Cloud Function 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     entrypoint: 'bash'
     args:
@@ -139,10 +144,6 @@ steps:
         
         echo "Deployment verification completed"
     id: 'verify-deployment'
-
-volumes:
-  - name: 'secret-volume'
-    path: '/workspace'
 
 # Substitution variables
 substitutions:
