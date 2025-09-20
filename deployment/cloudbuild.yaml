@@ -97,7 +97,8 @@ steps:
       - |
         # Check if the token file exists
         if [ ! -f "../token.json" ]; then
-          echo "Token file not found, skipping secret upload."
+          echo "❌ ERROR: token.json not found. Aborting build."
+          exit 1
         else
           echo "Uploading new secret version to Secret Manager..."
           gcloud secrets versions add ${_SECRET_NAME} \
