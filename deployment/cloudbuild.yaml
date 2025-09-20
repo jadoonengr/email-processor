@@ -2,7 +2,7 @@
 # This file should be placed in the root of your repository
 
 steps:
-  # Step 1: Install dependencies and run tests
+  # Step: Install dependencies and run tests
   - name: 'python:3.11-slim'
     entrypoint: 'bash'
     args:
@@ -21,28 +21,7 @@ steps:
         python -m pytest tests/ -v --cov=. --cov-report=term-missing
     id: 'test'
 
-  # Step 2: Build and validate configuration
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        # Validate Cloud Function deployment files
-        gcloud functions deploy email-processor \
-          --dry-run \
-          --gen2 \
-          --runtime python311 \
-          --source . \
-          --entry-point ${_FUNCTION_NAME} \
-          --trigger-topic ${_PUBSUB_TOPIC} \
-          --region ${_REGION} \
-          --project ${_PROJECT_ID} \
-          --service-account ${_SERVICE_ACCOUNT_EMAIL}  
-        
-        echo "Validation completed successfully"
-    id: 'validate'
-
-  # Step 3: Create BigQuery resources if they don't exist
+  # Step: Create BigQuery resources if they don't exist
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     entrypoint: 'bash'
     args:
@@ -65,7 +44,7 @@ steps:
         fi
     id: 'setup-bigquery'
 
-  # Step 4: Create Cloud Storage bucket if it doesn't exist
+  # Step: Create Cloud Storage bucket if it doesn't exist
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     entrypoint: 'bash'
     args:
@@ -82,7 +61,7 @@ steps:
         fi
     id: 'setup-storage'
 
-  # Step 5: Create Pub/Sub topic and subscription if they don't exist
+  # Step: Create Pub/Sub topic and subscription if they don't exist
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     entrypoint: 'bash'
     args:
@@ -110,28 +89,27 @@ steps:
         fi
     id: 'setup-pubsub'
 
-  # Step 6: Deploy Pub/Sub-triggered Cloud Function
+  # Step: Deploy Pub/Sub-triggered Cloud Function
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     entrypoint: 'bash'
     args:
-      - gcloud
-      - 'functions'
-      - 'deploy'
-      - '${_FUNCTION_NAME}'
-      - '--gen2'
-      - '--runtime=python311'
-      - '--source=.'
-      - '--entry-point=${_FUNCTION_NAME}'
-      - '--trigger-topic=${_PUBSUB_TOPIC}'
-      - '--region=${_REGION}'
-      - '--service-account=${_SERVICE_ACCOUNT_EMAIL}'
-      - '--set-env-vars=PROJECT_ID=${_PROJECT_ID},DATASET_NAME=${_DATASET_NAME},TABLE_NAME=${_TABLE_NAME},BUCKET_NAME=${_BUCKET_NAME}'
-      - '--memory=1GB'
-      - '--timeout=540s'
-      - '--max-instances=5'
+      - '-c'
+      - |
+        gcloud functions deploy ${_FUNCTION_NAME} \
+          --gen2 \
+          --runtime=python311 \
+          --source=. \
+          --entry-point=${_ENTRY_POINT} \
+          --trigger-topic=${_PUBSUB_TOPIC} \
+          --region=${_REGION} \
+          --service-account=${_SERVICE_ACCOUNT_EMAIL} \
+          --set-env-vars=PROJECT_ID=${_PROJECT_ID},DATASET_NAME=${_DATASET_NAME},TABLE_NAME=${_TABLE_NAME},BUCKET_NAME=${_BUCKET_NAME} \
+          --memory=1GB \
+          --timeout=540s \
+          --max-instances=5
     id: 'deploy-cloud-function'
 
-  # Step 7: Run deployment verification tests
+  # Step: Run deployment verification tests
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     entrypoint: 'bash'
     args:
@@ -167,7 +145,8 @@ substitutions:
   _PUBSUB_SUBSCRIPTION: 'gmail-notifier-sub'
   
   # Cloud Functions
-  _FUNCTION_NAME: 'process_email'
+  _FUNCTION_NAME: 'email-processor'
+  _ENTRY_POINT: 'process_email'
 
 # Build options
 options:
@@ -183,117 +162,3 @@ options:
 
 # Build timeout (set at root level)
 timeout: '1200s'
-
-# ---
-
-# # cloudbuild-dev.yaml - Development environment build
-# steps:
-#   # Development-specific steps
-#   - name: 'python:3.11-slim'
-#     entrypoint: 'bash'
-#     args:
-#       - '-c'
-#       - |
-#         pip install --no-cache-dir -r requirements.txt
-#         pip install pytest pytest-cov flake8 black pre-commit
-        
-#         # Install pre-commit hooks
-#         pre-commit install
-        
-#         # Run all pre-commit hooks
-#         pre-commit run --all-files
-        
-#         # Run tests with coverage
-#         python -m pytest tests/ -v --cov=. --cov-report=xml --cov-report=html
-#     id: 'dev-test'
-
-#   # Deploy to development environment
-#   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
-#     args:
-#       - 'functions'
-#       - 'deploy'
-#       - 'gmail-reader-dev'
-#       - '--gen2'
-#       - '--runtime=python311'
-#       - '--source=.'
-#       - '--entry-point=gmail_reader_http'
-#       - '--trigger-http'
-#       - '--region=us-central1'
-#       - '--service-account=email-notifier-dev-sa@alpine-comfort-470817-s8.iam.gserviceaccount.com'
-#       - '--set-env-vars=ENVIRONMENT=development'
-#     id: 'deploy-dev'
-
-# substitutions:
-#   _ENVIRONMENT: 'development'
-
-# ---
-
-# # cloudbuild-prod.yaml - Production environment build
-# steps:
-#   # Production-specific validation
-#   - name: 'python:3.11-slim'
-#     entrypoint: 'bash'
-#     args:
-#       - '-c'
-#       - |
-#         pip install --no-cache-dir -r requirements.txt
-        
-#         # Strict testing for production
-#         python -m pytest tests/ -v --strict-markers --tb=short
-        
-#         # Security scanning (example with bandit)
-#         pip install bandit
-#         bandit -r . -x tests/
-#     id: 'prod-validation'
-
-#   # Deploy with production settings
-#   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
-#     args:
-#       - 'functions'
-#       - 'deploy'
-#       - 'gmail-reader-prod'
-#       - '--gen2'
-#       - '--runtime=python311'
-#       - '--source=.'
-#       - '--entry-point=gmail_reader_http'
-#       - '--trigger-http'
-#       - '--no-allow-unauthenticated'  # Require authentication in prod
-#       - '--region=us-central1'
-#       - '--service-account=email-notifier-dev-sa@alpine-comfort-470817-s8.iam.gserviceaccount.com'
-#       - '--set-env-vars=ENVIRONMENT=production'
-#       - '--memory=2GB'
-#       - '--timeout=540s'
-#       - '--max-instances=20'
-#     id: 'deploy-prod'
-
-# substitutions:
-#   _ENVIRONMENT: 'production'
-
-# ---
-
-# # Build trigger configurations (to be created via CLI or Console)
-
-# # Trigger for main branch (production)
-# # gcloud builds triggers create github \
-# #   --repo-name=gmail-processor \
-# #   --repo-owner=your-github-username \
-# #   --branch-pattern=^main$ \
-# #   --build-config=cloudbuild.yaml \
-# #   --description="Production deployment trigger"
-
-# # Trigger for develop branch (development)
-# # gcloud builds triggers create github \
-# #   --repo-name=gmail-processor \
-# #   --repo-owner=your-github-username \
-# #   --branch-pattern=^develop$ \
-# #   --build-config=cloudbuild-dev.yaml \
-# #   --description="Development deployment trigger"
-
-# # Trigger for pull requests (testing only)
-# # gcloud builds triggers create github \
-# #   --repo-name=gmail-processor \
-# #   --repo-owner=your-github-username \
-# #   --pull-request-pattern=^main$ \
-# #   --build-config=cloudbuild-test.yaml \
-# #   --comment-control=COMMENTS_ENABLED \
-# #   --description="PR testing trigger"
