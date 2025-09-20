@@ -141,8 +141,8 @@ substitutions:
   _BUCKET_NAME: 'gmail-attachments-bucket-2fba'
   
   # Pub/Sub
-  _PUBSUB_TOPIC: 'gmail-notifier'
-  _PUBSUB_SUBSCRIPTION: 'gmail-notifier-sub'
+  _PUBSUB_TOPIC: 'email-notifier'
+  _PUBSUB_SUBSCRIPTION: 'email-notifier-sub'
   
   # Cloud Functions
   _FUNCTION_NAME: 'email-processor'
