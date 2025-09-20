@@ -100,7 +100,7 @@ steps:
     # Mount the volume to store the secret file
     volumes:
       - name: 'secret-volume'
-        path: '/workspace'
+        path: '/secrets'
 
   # Step: Deploy the Cloud Function 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
@@ -124,7 +124,7 @@ steps:
     # Access the token.json file
     volumes:
       - name: 'secret-volume'
-        path: '/workspace'
+        path: '/secrets'
 
   # Step: Run deployment verification tests
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
