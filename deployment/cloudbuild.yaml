@@ -156,10 +156,6 @@ options:
   
   # Enable detailed logging
   logging: CLOUD_LOGGING_ONLY
-  
-  # Use custom worker pool if available
-  # pool:
-  #   name: 'projects/${_PROJECT_ID}/locations/${_REGION}/workerPools/gmail-build-pool'
 
 # Build timeout (set at root level)
 timeout: '1200s'
