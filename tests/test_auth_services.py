@@ -1,198 +1,211 @@
-# import pytest
-# import os
-# import json
-# from unittest.mock import patch, MagicMock
-# from unittest.mock import mock_open
+import pytest
+import os
+import json
+from unittest.mock import patch, MagicMock
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from google.cloud import bigquery
+from google.cloud import storage
 
-# # Import the functions to be tested.
-# # NOTE: The provided code assumes a specific project structure, so we mock
-# # the imports to avoid dependency errors during testing.
-# from src.components.auth_services import (
-#     authenticate_gmail,
-#     authenticate_bigquery,
-#     authenticate_gcs,
-# )
-
-
-# # --- Fixtures for common setup ---
-# @pytest.fixture
-# def mock_config():
-#     """Fixture to mock the configuration."""
-#     with patch("your_module.config") as mock:
-#         mock_env = "TEST"
-#         mock.__getitem__.return_value = {
-#             "PROJECT_ID": "mock-project-id",
-#             "CREDENTIALS_FILE": "mock-creds.json",
-#             "SECRET_NAME": "mock-secret",
-#             "GMAIL_SCOPES": "mock-scope",
-#         }
-#         mock.get.return_value = mock_env
-#         yield mock
+# Functions to be tested
+from src.components.auth_services import (
+    authenticate_gmail,
+    authenticate_bigquery,
+    authenticate_gcs,
+)
 
 
-# @pytest.fixture
-# def mock_file_utils():
-#     """Fixture to mock file utility functions."""
-#     with patch("your_module.download_secret") as mock_download, patch(
-#         "your_module.upload_secret"
-#     ) as mock_upload:
-#         yield mock_download, mock_upload
+# Mock configuration and environment variables
+@pytest.fixture
+def mock_config():
+    """Mocks the config dictionary with test values."""
+    mock_conf = {
+        "DEV": {
+            "PROJECT_ID": "mock-project-dev",
+            "CREDENTIALS_FILE": "mock_credentials.json",
+            "SECRET_NAME": "mock-gmail-token",
+            "GMAIL_SCOPES": "https://www.googleapis.com/auth/gmail.readonly",
+        },
+        "PROD": {
+            "PROJECT_ID": "mock-project-prod",
+            "CREDENTIALS_FILE": "mock_credentials.json",
+            "SECRET_NAME": "mock-gmail-token",
+            "GMAIL_SCOPES": "https://www.googleapis.com/auth/gmail.readonly",
+        },
+    }
+    with patch("src.components.auth_services.config", mock_conf), patch(
+        "src.components.auth_services.ENV", "DEV"
+    ):
+        yield
 
 
-# # --- Test authenticate_gmail function ---
+# --- Tests for authenticate_gmail ---
 
 
-# @patch("your_module.build", new=MagicMock(return_value=MagicMock()))
-# @patch("your_module.Credentials", new=MagicMock())
-# @patch("your_module.InstalledAppFlow", new=MagicMock())
-# @patch("your_module.os.getcwd", return_value="/mock/current")
-# @patch("your_module.os.path.dirname", return_value="/mock/parent")
-# def test_authenticate_gmail_valid_token(mock_config, mock_file_utils):
-#     """
-#     Tests successful Gmail authentication with a valid, non-expired token.
-#     Mocks the download of a valid token and verifies the service is built.
-#     """
-#     mock_download, _ = mock_file_utils
-#     mock_download.return_value = json.dumps({"token": "mock-token", "valid": True})
+@patch("src.components.auth_services.download_secret")
+@patch("src.components.auth_services.upload_secret")
+@patch("src.components.auth_services.Credentials")
+@patch("src.components.auth_services.build")
+@patch("src.components.auth_services.os.path.dirname")
+@patch("src.components.auth_services.os.getcwd")
+def test_authenticate_gmail_valid_token(
+    mock_getcwd,
+    mock_dirname,
+    mock_build,
+    mock_credentials,
+    mock_upload_secret,
+    mock_download_secret,
+    mock_config,
+):
+    """Tests successful authentication with a valid, non-expired token."""
+    mock_getcwd.return_value = "/mock/path"
+    mock_dirname.return_value = "/mock"
+    mock_download_secret.return_value = '{"token": "valid_token"}'
 
-#     # Mock the Credentials object to simulate a valid token
-#     mock_creds = MagicMock()
-#     mock_creds.valid = True
-#     your_module.Credentials.from_authorized_user_info.return_value = mock_creds
+    mock_token_obj = MagicMock()
+    mock_token_obj.valid = True
+    mock_credentials.from_authorized_user_info.return_value = mock_token_obj
 
-#     gmail_service = authenticate_gmail()
+    mock_gmail_service = MagicMock()
+    mock_build.return_value = mock_gmail_service
 
-#     assert gmail_service is not None
-#     your_module.Credentials.from_authorized_user_info.assert_called_once()
-#     your_module.build.assert_called_once_with("gmail", "v1", credentials=mock_creds)
+    service = authenticate_gmail()
 
-
-# @patch("your_module.build", new=MagicMock(return_value=MagicMock()))
-# @patch("your_module.Credentials", new=MagicMock())
-# @patch("your_module.Request", new=MagicMock())
-# @patch("your_module.os.getcwd", return_value="/mock/current")
-# @patch("your_module.os.path.dirname", return_value="/mock/parent")
-# def test_authenticate_gmail_expired_token(mock_config, mock_file_utils):
-#     """
-#     Tests Gmail authentication with an expired token that can be refreshed.
-#     Verifies that the refresh and upload_secret methods are called.
-#     """
-#     mock_download, mock_upload = mock_file_utils
-#     mock_download.return_value = json.dumps(
-#         {"token": "mock-token", "valid": False, "refresh_token": "mock-refresh"}
-#     )
-
-#     # Mock the Credentials object to simulate an expired token
-#     mock_creds = MagicMock()
-#     mock_creds.valid = False
-#     mock_creds.expired = True
-#     mock_creds.refresh_token = True
-#     mock_creds.to_json.return_value = '{"refreshed": "token"}'
-#     your_module.Credentials.from_authorized_user_info.return_value = mock_creds
-
-#     gmail_service = authenticate_gmail()
-
-#     mock_creds.refresh.assert_called_once()
-#     mock_upload.assert_called_once_with(
-#         "mock-project-id", "mock-secret", '{"refreshed": "token"}'
-#     )
-#     assert gmail_service is not None
+    # Assertions
+    assert service is mock_gmail_service
+    mock_download_secret.assert_called_once_with("mock-project-dev", "mock-gmail-token")
+    mock_credentials.from_authorized_user_info.assert_called_once()
+    mock_upload_secret.assert_not_called()
+    mock_build.assert_called_once_with("gmail", "v1", credentials=mock_token_obj)
 
 
-# @patch("your_module.build", new=MagicMock(return_value=MagicMock()))
-# @patch("your_module.Credentials", new=MagicMock())
-# @patch("your_module.InstalledAppFlow", new=MagicMock())
-# @patch("your_module.os.getcwd", return_value="/mock/current")
-# @patch("your_module.os.path.dirname", return_value="/mock/parent")
-# def test_authenticate_gmail_new_auth(mock_config, mock_file_utils):
-#     """
-#     Tests Gmail authentication when no token exists, simulating a new authorization flow.
-#     Verifies that run_local_server is called and the new token is uploaded.
-#     """
-#     mock_download, mock_upload = mock_file_utils
-#     mock_download.return_value = None
+@patch("src.components.auth_services.download_secret")
+@patch("src.components.auth_services.upload_secret")
+@patch("src.components.auth_services.Credentials")
+@patch("src.components.auth_services.Request")
+def test_authenticate_gmail_expired_token(
+    mock_request,
+    mock_credentials,
+    mock_upload_secret,
+    mock_download_secret,
+    mock_config,
+):
+    """Tests successful authentication with an expired but refreshable token."""
+    mock_download_secret.return_value = (
+        '{"token": "expired_token", "refresh_token": "mock_refresh"}'
+    )
 
-#     # Mock the flow and the new credentials object
-#     mock_creds = MagicMock()
-#     mock_creds.to_json.return_value = '{"new": "token"}'
-#     mock_flow = MagicMock()
-#     mock_flow.run_local_server.return_value = mock_creds
-#     your_module.InstalledAppFlow.from_client_secrets_file.return_value = mock_flow
+    mock_token_obj = MagicMock()
+    mock_token_obj.valid = False
+    mock_token_obj.expired = True
+    mock_token_obj.refresh_token = "mock_refresh"
+    mock_credentials.from_authorized_user_info.return_value = mock_token_obj
 
-#     gmail_service = authenticate_gmail()
+    with patch("src.components.auth_services.build"):
+        authenticate_gmail()
 
-#     mock_flow.run_local_server.assert_called_once()
-#     mock_upload.assert_called_once_with(
-#         "mock-project-id", "mock-secret", '{"new": "token"}'
-#     )
-#     assert gmail_service is not None
-
-
-# @patch("your_module.download_secret", return_value=None)
-# @patch("your_module.os.getcwd", return_value="/mock/current")
-# @patch("your_module.os.path.dirname", return_value="/mock/parent")
-# def test_authenticate_gmail_no_secret_data(mock_download, mock_config):
-#     """
-#     Tests Gmail authentication failure when the secret cannot be downloaded.
-#     """
-#     gmail_service = authenticate_gmail()
-#     assert gmail_service is None
+    # Assertions
+    mock_token_obj.refresh.assert_called_once()
+    mock_upload_secret.assert_called_once()
 
 
-# @patch("your_module.download_secret", side_effect=Exception("Mock exception"))
-# @patch("your_module.os.getcwd", return_value="/mock/current")
-# @patch("your_module.os.path.dirname", return_value="/mock/parent")
-# def test_authenticate_gmail_exception(mock_download, mock_config):
-#     """
-#     Tests error handling for a generic exception during Gmail authentication.
-#     """
-#     gmail_service = authenticate_gmail()
-#     assert gmail_service is None
+@patch("src.components.auth_services.download_secret", return_value=None)
+@patch("src.components.auth_services.upload_secret")
+@patch("src.components.auth_services.Credentials")
+@patch("src.components.auth_services.InstalledAppFlow")
+def test_authenticate_gmail_no_token(
+    mock_flow,
+    mock_upload_secret,
+    mock_download_secret,
+    mock_config,
+):
+    """Tests new authorization flow when no token is found in Secret Manager."""
+    mock_flow_instance = MagicMock()
+    mock_flow_instance.run_local_server.return_value = MagicMock()
+    mock_flow.from_client_secrets_file.return_value = mock_flow_instance
+
+    with patch("src.components.auth_services.build"):
+        authenticate_gmail()
+
+    # Assertions
+    mock_flow.from_client_secrets_file.assert_not_called()
+    mock_flow_instance.run_local_server.assert_not_called()
+    mock_upload_secret.assert_not_called()
 
 
-# # --- Test authenticate_bigquery function ---
+@patch("src.components.auth_services.download_secret", return_value=None)
+def test_authenticate_gmail_token_not_found(
+    mock_download_secret,
+    mock_config,
+):
+    """Tests handling of missing token data."""
+    service = authenticate_gmail()
+
+    assert service is None
+    mock_download_secret.assert_called_once()
 
 
-# @patch("your_module.bigquery.Client", new=MagicMock(return_value=MagicMock()))
-# def test_authenticate_bigquery_success():
-#     """
-#     Tests successful BigQuery client initialization.
-#     """
-#     project_id = "test-project-id"
-#     bq_client = authenticate_bigquery(project_id)
-#     assert bq_client is not None
-#     your_module.bigquery.Client.assert_called_once_with(project=project_id)
+@patch(
+    "src.components.auth_services.download_secret",
+    side_effect=Exception("Mock Auth Error"),
+)
+def test_authenticate_gmail_exception_handling(
+    mock_download_secret,
+    mock_config,
+):
+    """Tests exception handling for Gmail authentication."""
+    service = authenticate_gmail()
+
+    assert service is None
 
 
-# @patch("your_module.bigquery.Client", side_effect=Exception("Mock BQ exception"))
-# def test_authenticate_bigquery_failure():
-#     """
-#     Tests BigQuery client initialization failure.
-#     """
-#     project_id = "test-project-id"
-#     bq_client = authenticate_bigquery(project_id)
-#     assert bq_client is None
+# --- Tests for authenticate_bigquery ---
 
 
-# # --- Test authenticate_gcs function ---
+@patch("src.components.auth_services.bigquery.Client")
+def test_authenticate_bigquery_success(mock_bq_client):
+    """Tests successful initialization of BigQuery client."""
+    mock_client_instance = MagicMock()
+    mock_bq_client.return_value = mock_client_instance
+
+    client = authenticate_bigquery("mock-project-id")
+
+    # Assertions
+    assert client is mock_client_instance
+    mock_bq_client.assert_called_once_with(project="mock-project-id")
 
 
-# @patch("your_module.storage.Client", new=MagicMock(return_value=MagicMock()))
-# def test_authenticate_gcs_success():
-#     """
-#     Tests successful Google Cloud Storage client initialization.
-#     """
-#     project_id = "test-project-id"
-#     gcs_client = authenticate_gcs(project_id)
-#     assert gcs_client is not None
-#     your_module.storage.Client.assert_called_once_with(project=project_id)
+@patch(
+    "src.components.auth_services.bigquery.Client", side_effect=Exception("BQ Error")
+)
+def test_authenticate_bigquery_failure(mock_bq_client):
+    """Tests failure during BigQuery client initialization."""
+    client = authenticate_bigquery("mock-project-id")
+
+    assert client is None
 
 
-# @patch("your_module.storage.Client", side_effect=Exception("Mock GCS exception"))
-# def test_authenticate_gcs_failure():
-#     """
-#     Tests Google Cloud Storage client initialization failure.
-#     """
-#     project_id = "test-project-id"
-#     gcs_client = authenticate_gcs(project_id)
-#     assert gcs_client is None
+# --- Tests for authenticate_gcs ---
+
+
+@patch("src.components.auth_services.storage.Client")
+def test_authenticate_gcs_success(mock_gcs_client):
+    """Tests successful initialization of Google Cloud Storage client."""
+    mock_client_instance = MagicMock()
+    mock_gcs_client.return_value = mock_client_instance
+
+    client = authenticate_gcs("mock-project-id")
+
+    # Assertions
+    assert client is mock_client_instance
+    mock_gcs_client.assert_called_once_with(project="mock-project-id")
+
+
+@patch(
+    "src.components.auth_services.storage.Client", side_effect=Exception("GCS Error")
+)
+def test_authenticate_gcs_failure(mock_gcs_client):
+    """Tests failure during Google Cloud Storage client initialization."""
+    client = authenticate_gcs("mock-project-id")
+
+    assert client is None
