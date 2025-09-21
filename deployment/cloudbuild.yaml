@@ -89,24 +89,6 @@ steps:
         fi
     id: 'setup-pubsub'
 
-  # Step: Upload token to Secret Manager
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        # Check if the token file exists
-        if [ ! -f "../token.json" ]; then
-          echo "❌ ERROR: token.json not found. Aborting build."
-          exit 1
-        else
-          echo "Uploading new secret version to Secret Manager..."
-          gcloud secrets versions add ${_SECRET_NAME} \
-            --data-file="token.json"
-          echo "Secret uploaded successfully."
-        fi
-    id: 'upload-secret'
-
   # Step: Deploy the Cloud Function 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     entrypoint: 'bash'
@@ -164,8 +146,8 @@ substitutions:
   
   # Cloud Functions
   _FUNCTION_NAME: 'email-processor'
-  _ENTRY_POINT: 'process_email'
-  _SECRET_NAME: 'email-processor-token'
+  _ENTRY_POINT: 'process_emails'
+  _SECRET_NAME: 'gmail-token'
 
 # Build options
 options:

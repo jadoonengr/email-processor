@@ -4,8 +4,7 @@ import json
 import os
 import base64
 from datetime import datetime
-from main import process_email
-
+from main import process_emails
 
 # Mock data for Pub/Sub event and Gmail API responses
 MOCK_USER_ID = "jadoon.engr@gmail.com"
@@ -19,56 +18,56 @@ MOCK_PUB_SUB_PAYLOAD = {
     }
 }
 
-# --- Mock Gmail API Responses ---
+# # --- Mock Gmail API Responses ---
 
-# Response for users().messages().list()
-MOCK_GMAIL_LIST_RESPONSE = {
-    "messages": [
-        {"id": "latest_message_id"},
-    ]
-}
+# # Response for users().messages().list()
+# MOCK_GMAIL_LIST_RESPONSE = {
+#     "messages": [
+#         {"id": "latest_message_id"},
+#     ]
+# }
 
-# Response for users().messages().get() for an email with an attachment
-MOCK_GMAIL_MESSAGE_WITH_ATTACHMENT = {
-    "id": "latest_message_id",
-    "snippet": "This is a test email with an attachment.",
-    "internalDate": "1672531200000",  # Jan 1, 2023, in milliseconds
-    "payload": {
-        "headers": [
-            {"name": "Subject", "value": "Test Email with Attachment"},
-            {"name": "From", "value": "sender@example.com"},
-        ],
-        "parts": [
-            {"mimeType": "text/plain", "body": {"size": 100}},
-            {
-                "mimeType": "application/pdf",
-                "filename": "document.pdf",
-                "body": {"attachmentId": "mock_attachment_id", "size": 500},
-            },
-        ],
-    },
-}
+# # Response for users().messages().get() for an email with an attachment
+# MOCK_GMAIL_MESSAGE_WITH_ATTACHMENT = {
+#     "id": "latest_message_id",
+#     "snippet": "This is a test email with an attachment.",
+#     "internalDate": "1672531200000",  # Jan 1, 2023, in milliseconds
+#     "payload": {
+#         "headers": [
+#             {"name": "Subject", "value": "Test Email with Attachment"},
+#             {"name": "From", "value": "sender@example.com"},
+#         ],
+#         "parts": [
+#             {"mimeType": "text/plain", "body": {"size": 100}},
+#             {
+#                 "mimeType": "application/pdf",
+#                 "filename": "document.pdf",
+#                 "body": {"attachmentId": "mock_attachment_id", "size": 500},
+#             },
+#         ],
+#     },
+# }
 
-# Response for users().messages().get() for an email with no attachment
-MOCK_GMAIL_MESSAGE_NO_ATTACHMENT = {
-    "id": "latest_message_id",
-    "snippet": "This is a test email with no attachment.",
-    "internalDate": "1672531200000",
-    "payload": {
-        "headers": [
-            {"name": "Subject", "value": "Test Email with No Attachment"},
-            {"name": "From", "value": "sender@example.com"},
-        ],
-        "parts": [
-            {"mimeType": "text/plain", "body": {"size": 100}},
-        ],
-    },
-}
+# # Response for users().messages().get() for an email with no attachment
+# MOCK_GMAIL_MESSAGE_NO_ATTACHMENT = {
+#     "id": "latest_message_id",
+#     "snippet": "This is a test email with no attachment.",
+#     "internalDate": "1672531200000",
+#     "payload": {
+#         "headers": [
+#             {"name": "Subject", "value": "Test Email with No Attachment"},
+#             {"name": "From", "value": "sender@example.com"},
+#         ],
+#         "parts": [
+#             {"mimeType": "text/plain", "body": {"size": 100}},
+#         ],
+#     },
+# }
 
-# Response for users().messages().attachments().get()
-MOCK_GMAIL_ATTACHMENT_DATA = {
-    "data": base64.urlsafe_b64encode(b"this is the file content").decode("utf-8")
-}
+# # Response for users().messages().attachments().get()
+# MOCK_GMAIL_ATTACHMENT_DATA = {
+#     "data": base64.urlsafe_b64encode(b"this is the file content").decode("utf-8")
+# }
 
 # --- Pytest Fixtures ---
 
@@ -85,6 +84,9 @@ def mock_cloud_event():
 def set_env_vars(monkeypatch):
     """Sets environment variables using monkeypatch."""
     monkeypatch.setenv("APP_ENV", "dev")
+    with open("./token.json", "r") as token_file:
+        token_data = token_file.read()
+    monkeypatch.setenv("TOKEN_STRING", token_data)
 
 
 # --- Unit Tests ---
@@ -120,7 +122,7 @@ def test_process_email_with_attachment_success(
     # mock_bucket.blob.return_value = mock_blob
 
     # Run the function
-    process_email(mock_cloud_event)
+    process_emails(mock_cloud_event)
 
     # Assertions
     # # Verify Gmail API calls

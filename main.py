@@ -37,7 +37,7 @@ BIGQUERY_TABLE = config[ENV]["BIGQUERY_TABLE"]
 
 # --- Main Function ---
 @functions_framework.cloud_event
-def process_email(cloud_event):
+def process_emails(cloud_event):
     """
     Cloud Function triggered by a Pub/Sub message from Gmail.
     This function uses the Gmail API to retrieve and process email data.
