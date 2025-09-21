@@ -17,8 +17,8 @@ steps:
         # Linting
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         
-        # # Run tests
-        # python -m pytest tests/ -v --cov=. --cov-report=term-missing
+        # Run tests
+        python -m pytest tests/ -v --cov=. --cov-report=term-missing
     id: 'test'
 
   # Step: Create BigQuery resources if they don't exist
