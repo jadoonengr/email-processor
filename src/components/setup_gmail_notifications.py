@@ -64,9 +64,35 @@ def setup_gmail_push_notifications(gmail_service):
 
 
 def stop_gmail_push_notifications(gmail_service, user_id="me"):
-    """Stop Gmail push notifications"""
+    """
+    Stop Gmail push notifications for the specified user.
 
-    # gmail_service = build("gmail", "v1", credentials=credentials)
+    Args:
+        gmail_service: Authenticated Gmail API service object
+        user_id (str): Gmail user ID, defaults to "me" for authenticated user
 
-    gmail_service.users().stop(userId=user_id).execute()
-    logger.info("Push notifications stopped")
+    Returns:
+        bool: True if notifications were stopped successfully, False otherwise
+    """
+    try:
+        logger.info(f"Stopping Gmail push notifications for user: {user_id}")
+
+        # Stop the push notifications
+        gmail_service.users().stop(userId=user_id).execute()
+
+        logger.info("✅ Gmail push notifications stopped successfully!")
+        return True
+
+    except Exception as e:
+        logger.error(f"❌ Error stopping push notifications: {e}")
+        logger.error(f"User ID: {user_id}")
+
+        # Log additional context for debugging
+        if "invalid" in str(e).lower():
+            logger.error(
+                "💡 Tip: Check if push notifications were already stopped or never set up"
+            )
+        elif "permission" in str(e).lower():
+            logger.error("💡 Tip: Check if the service account has proper permissions")
+
+        return False
