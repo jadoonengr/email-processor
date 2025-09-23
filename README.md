@@ -1,23 +1,25 @@
-# Gmail Email Processor
+# Email Management and Processing System
 
-A robust Python application for processing Gmail emails, extracting attachments, and storing data in Google Cloud services. Built specifically for Google Cloud Functions with comprehensive email management capabilities.
+A Python-based serverless application built using Google Cloud Functions with comprehensive email management capabilities. It processes emails by automatically extracting Gmail messages and storing structured data in BigQuery. Moreover, the email attachments (if any) are saved in Cloud Storage.
 
-![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
+
+![Python](https://img.shields.io/badge/Python-3.13-blue.svg)
 ![Google Cloud](https://img.shields.io/badge/Google%20Cloud-Platform-blue.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
+![Cloud Build](https://img.shields.io/badge/build-passing-green.svg)
+
 
 ## 🚀 Tech Stack Summary
 
 | **Category** | **Technology** | **Purpose** |
 |--------------|----------------|-------------|
-| **Language** | Python 3.11 | Primary programming language |
+| **Language** | Python 3.13 | Primary programming language |
 | **Compute** | Google Cloud Functions Gen 2 | Serverless email processing |
 | **Database** | Google BigQuery | Raw email storage |
 | **Storage** | Google Cloud Storage | Email attachments storage |
 | **Messaging** | Google Cloud Pub/Sub | Event-driven notifications |
 | **Security** | Google Secret Manager | OAuth token storage |
 | **Authentication** | OAuth 2.0 + Gmail API | Gmail access |
-| **Scheduling** | Google Cloud Scheduler | Watch renewal automation |
 | **CI/CD** | Google Cloud Build | Automated deployment |
 | **Version Control** | GitHub | Code repository |
 | **Monitoring** | Cloud Logging/Monitoring | Observability |
@@ -34,15 +36,6 @@ A robust Python application for processing Gmail emails, extracting attachments,
 | `google-cloud-pubsub` | Message handling |
 | `google-cloud-secret-manager` | Credential management |
 
-## Architecture Pattern
-**Event-Driven Serverless**: Gmail → Pub/Sub → Cloud Functions → Business Logic
-- **Gmail API Integration**: Secure OAuth2 authentication with Gmail
-- **Email Processing**: Extract email content, headers, and metadata  
-- **Attachment Management**: Download and upload attachments to Google Cloud Storage
-- **BigQuery Storage**: Store processed email data in BigQuery for analytics
-- **Cloud Function Ready**: Designed to run as serverless Google Cloud Functions
-- **Error Handling**: Comprehensive error handling and logging
-- **Scalable Architecture**: Efficient design for maintainability and testing
 
 ## 📋 Table of Contents
 
@@ -50,6 +43,7 @@ A robust Python application for processing Gmail emails, extracting attachments,
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Configuration](#configuration)
+- [Initial Resource Setup](#setup)
 - [Usage](#usage)
 - [Cloud Function Deployment](#cloud-function-deployment)
 - [API Reference](#api-reference)
@@ -57,11 +51,9 @@ A robust Python application for processing Gmail emails, extracting attachments,
 - [Contributing](#contributing)
 - [License](#license)
 
-## 🏗️ Architecture
 
-```
-Gmail API → Email Processing → Attachment Storage (GCS) → Data Storage (BigQuery)
-```
+
+## 🏗️ Architecture
 
 The application follows a modular architecture:
 
@@ -70,6 +62,25 @@ The application follows a modular architecture:
 - **Storage Layer**: Manages data persistence in Google Cloud services
 - **Orchestration Layer**: Coordinates the entire workflow
 
+```
+Gmail API → Pub/Sub Topic → Cloud Function → Email Text + Email Attachments
+                                                 ↓              ↓
+                                              BigQuery    Cloud Storage
+```
+
+Key features of the architecture are:
+
+- **Event-Driven Serverless**: Gmail → Pub/Sub → Cloud Functions → Data Storage
+- **Gmail API Integration**: Secure OAuth2 authentication with Gmail
+- **Email Processing**: Extract email content, headers, and metadata  
+- **Attachment Management**: Download and upload attachments to Google Cloud Storage
+- **BigQuery Storage**: Store processed email data in BigQuery for analytics
+- **Cloud Function Ready**: Designed to run as serverless Google Cloud Functions
+- **Error Handling**: Comprehensive error handling and logging
+- **Scalable Architecture**: Efficient design for maintainability and testing
+
+
+
 ## 📋 Prerequisites
 
 Before you begin, ensure you have:
@@ -77,10 +88,9 @@ Before you begin, ensure you have:
 - Python 3.8 or higher
 - Google Cloud Project with billing enabled
 - Gmail API enabled
-- BigQuery API enabled  
-- Cloud Storage API enabled
+- Cloud Functions, BigQuery, and Cloud Storage APIs enabled
 - Service account with appropriate permissions
-
+<!-- 
 ### Required Google Cloud APIs
 
 ```bash
@@ -88,20 +98,21 @@ gcloud services enable gmail.googleapis.com
 gcloud services enable bigquery.googleapis.com
 gcloud services enable storage.googleapis.com
 gcloud services enable cloudfunctions.googleapis.com
-```
+``` -->
 
 ## 🛠️ Installation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/gmail-processor.git
+   git clone https://github.com/jadoonengr/gmail-processor.git
    cd gmail-processor
    ```
 
 2. **Create virtual environment**
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   python -m venv env
+   source env/Scripts/activate      # On Windows
+   <!-- source env/bin/activate      # On Linux -->
    ```
 
 3. **Install dependencies**
@@ -110,41 +121,37 @@ gcloud services enable cloudfunctions.googleapis.com
    ```
 
 4. **Set up Google Cloud credentials**
-   ```bash
+   ```text
    # Download your OAuth2 credentials from Google Cloud Console
-   # Place the JSON file in your project directory
+   # Place the JSON file in your project's parent directory
    ```
 
 ## ⚙️ Configuration
 
 ### 1. Create Configuration File
 
-Create `src/config.py`:
+Populate `src/config.ini` with desired project resource information. Same information will be used later to create resources using `gcloud` utility. Sample settings for the `DEV` environment are shown below.
 
 ```python
-config = {
-    "development": {
-        "PROJECT_ID": "your-gcp-project-id",
-        "GCS_BUCKET_NAME": "your-storage-bucket",
-        "BIGQUERY_DATASET": "your_dataset",
-        "BIGQUERY_TABLE": "emails",
-        "CREDENTIALS_FILE": "path/to/credentials.json",
-        "GMAIL_SCOPES": "https://www.googleapis.com/auth/gmail.readonly"
-    },
-    "production": {
-        # Production configuration
-    }
-}
-
-ENV = "development"  # or "production"
+[dev]
+PROJECT_ID = alpine-comfort-470817-s8
+EMAIL_ID = aamirjadoon001@gmail.com
+CREDENTIALS_FILE = credentials.json
+SECRET_NAME = gmail-token
+GMAIL_SCOPES = https://www.googleapis.com/auth/gmail.modify
+GCS_BUCKET_NAME = gmail-attachments-bucket-2fba
+BIGQUERY_DATASET = idp
+BIGQUERY_TABLE = gmail_raw_emails
+PUBSUB_TOPIC = email-notifier
+SERVICE_ACCOUNT = email-notifier-dev-sa@alpine-comfort-470817-s8. iam.gserviceaccount.com
 ```
 
 ### 2. BigQuery Schema
 
-Create your BigQuery table with this schema:
+For the BigQuery table, we need to define the schema. The following information is saved in the BigQuery table. Any changes to this schema needs changes in the relevant code. A sample SQL query is shown below to create this table. But we create it using `gcloud` command later.
 
 ```sql
-CREATE TABLE `your-project.your_dataset.emails` (
+CREATE TABLE `alpine-comfort-470817-s8.idp.gmail_raw_emails` (
   message_id STRING,
   thread_id STRING,
   subject STRING,
@@ -162,13 +169,13 @@ CREATE TABLE `your-project.your_dataset.emails` (
 );
 ```
 
-### 3. Google Cloud Storage
+### 3. Initial Project Setup
 
-Create a storage bucket for attachments:
+Once we define names for all the resources required, the next step is to create those resources and then deploy the source code. Following resources are to be created:
 
-```bash
-gsutil mb gs://your-attachment-bucket
-```
+- 
+- 
+
 
 ## 🎯 Usage
 
@@ -189,18 +196,6 @@ for email in emails:
     print(f"Processed: {processed_email['subject']}")
 ```
 
-#### Class-Based Approach (Recommended)
-```python
-from src.gmail_processor import GmailProcessor
-from src.config import config, ENV
-
-# Initialize processor
-processor = GmailProcessor(config[ENV])
-
-# Process all unread emails
-summary = processor.process_all_unread_emails(max_results=50)
-print(f"Processed: {summary['processed']}, Failed: {summary['failed']}")
-```
 
 ### Standalone Script
 
