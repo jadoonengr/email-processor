@@ -8,6 +8,7 @@ A Python-based serverless application built using Google Cloud Functions with co
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 ![Cloud Build](https://img.shields.io/badge/build-passing-green.svg)
 
+---
 
 ## 🚀 Tech Stack Summary
 
@@ -36,6 +37,7 @@ A Python-based serverless application built using Google Cloud Functions with co
 | `google-cloud-pubsub` | Message handling |
 | `google-cloud-secret-manager` | Credential management |
 
+---
 
 ## 📋 Table of Contents
 
@@ -52,6 +54,7 @@ A Python-based serverless application built using Google Cloud Functions with co
 - [License](#license)
 
 
+---
 
 ## 🏗️ Architecture
 
@@ -79,7 +82,7 @@ Key features of the architecture are:
 - **Error Handling**: Comprehensive error handling and logging
 - **Scalable Architecture**: Efficient design for maintainability and testing
 
-
+---
 
 ## 📋 Prerequisites
 
@@ -90,41 +93,8 @@ Before you begin, ensure you have:
 - Gmail API enabled
 - Cloud Functions, BigQuery, and Cloud Storage APIs enabled
 - Service account with appropriate permissions
-<!-- 
-### Required Google Cloud APIs
 
-```bash
-gcloud services enable gmail.googleapis.com
-gcloud services enable bigquery.googleapis.com
-gcloud services enable storage.googleapis.com
-gcloud services enable cloudfunctions.googleapis.com
-``` -->
-
-## 🛠️ Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/jadoonengr/gmail-processor.git
-   cd gmail-processor
-   ```
-
-2. **Create virtual environment**
-   ```bash
-   python -m venv env
-   source env/Scripts/activate      # On Windows
-   <!-- source env/bin/activate      # On Linux -->
-   ```
-
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Set up Google Cloud credentials**
-   ```text
-   # Download your OAuth2 credentials from Google Cloud Console
-   # Place the JSON file in your project's parent directory
-   ```
+---
 
 ## ⚙️ Configuration
 
@@ -171,154 +141,42 @@ CREATE TABLE `alpine-comfort-470817-s8.idp.gmail_raw_emails` (
 
 ### 3. Initial Project Setup
 
-Once we define names for all the resources required, the next step is to create those resources and then deploy the source code. Following resources are to be created:
+Once we define the initial parameters above, the next step is to create those resources and then deploy the source code. Following resources are to be created:
 
-- 
-- 
+- Create project
+- BigQuery table
+- Cloud Storage bucket
+- Cloud Pub/Sub Topic and Subscription
+- Secret key on Cloud Secret Manager
+- Working and deployment service accounts with relevant permissions
 
+This is quite involved process and we have created a separate page to go over all the required steps. At the end of these steps, we will be able to run our code locally (using Cloud resources).
 
-## 🎯 Usage
+GCP Resource Setup Guide: [PROJECT_SETUP.md](PROJECT_SETUP.md)
 
-### Local Development
+---
 
-#### Function-Based Approach
-```python
-from src.components.auth_services import authenticate_gmail
-from src.components.process_emails import list_unread_emails, read_email
+## 🛠️ Development Setup
 
-# Initialize services
-gmail_service = authenticate_gmail()
-emails = list_unread_emails(gmail_service, max_results=10)
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/jadoonengr/email-management-system.git
+   cd email-management-system
+   ```
 
-# Process emails
-for email in emails:
-    processed_email = read_email(gmail_service, email)
-    print(f"Processed: {processed_email['subject']}")
-```
+2. **Create virtual environment**
+   ```bash
+   python -m venv env
+   source env/Scripts/activate      # On Windows
+   <!-- source env/bin/activate      # On Linux -->
+   ```
 
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-### Standalone Script
-
-```python
-#!/usr/bin/env python3
-import sys
-from src.gmail_processor import GmailProcessor
-from src.config import config, ENV
-
-def main():
-    try:
-        processor = GmailProcessor(config[ENV])
-        summary = processor.process_all_unread_emails()
-        
-        print("📊 Processing Summary:")
-        print(f"   ✅ Total emails: {summary['total']}")
-        print(f"   ✅ Successfully processed: {summary['processed']}")
-        print(f"   ❌ Failed: {summary['failed']}")
-        
-        return 0 if summary['failed'] == 0 else 1
-        
-    except Exception as e:
-        print(f"💥 Error: {e}")
-        return 1
-
-if __name__ == "__main__":
-    sys.exit(main())
-```
-
-## ☁️ Cloud Function Deployment
-
-### 1. Prepare Deployment Files
-
-**requirements.txt**
-```
-google-auth-oauthlib>=1.0.0
-google-auth-httplib2>=0.1.0
-google-api-python-client>=2.0.0
-google-cloud-bigquery>=3.0.0
-google-cloud-storage>=2.0.0
-functions-framework>=3.0.0
-```
-
-**main.py** (Entry point)
-```python
-import functions_framework
-from src.gmail_processor import GmailProcessor
-from src.config import config, ENV
-
-@functions_framework.cloud_event
-def process_gmail_emails(cloud_event):
-    """Cloud Function entry point."""
-    processor = GmailProcessor(config[ENV])
-    summary = processor.process_all_unread_emails()
-    return {"success": True, "summary": summary}
-```
-
-### 2. Deploy to Google Cloud Functions
-
-```bash
-# Deploy the function
-gcloud functions deploy process-gmail-emails \
-    --gen2 \
-    --runtime=python39 \
-    --region=us-central1 \
-    --source=. \
-    --entry-point=process_gmail_emails \
-    --trigger-topic=gmail-notifications \
-    --memory=512MB \
-    --timeout=540s
-```
-
-### 3. Set up Gmail Push Notifications
-
-```bash
-# Create Pub/Sub topic
-gcloud pubsub topics create gmail-notifications
-
-# Set up Gmail watch (replace with your email)
-curl -X POST \
-  "https://gmail.googleapis.com/gmail/v1/users/me/watch" \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "topicName": "projects/YOUR_PROJECT_ID/topics/gmail-notifications",
-    "labelIds": ["UNREAD"]
-  }'
-```
-
-## 📚 API Reference
-
-### GmailProcessor Class
-
-#### Constructor
-```python
-GmailProcessor(config: Dict[str, Any])
-```
-Initialize the processor with configuration dictionary.
-
-#### Methods
-
-##### `process_all_unread_emails(max_results: int = 100) -> Dict[str, int]`
-Process all unread emails and return processing summary.
-
-##### `process_email(email_ref: Dict[str, str]) -> Optional[Dict[str, Any]]`
-Process a single email and return structured data.
-
-##### `get_unread_emails(max_results: int = 100) -> List[Dict[str, Any]]`
-Fetch unread email references from Gmail.
-
-##### `store_email_in_bigquery(email_data: Dict[str, Any]) -> bool`
-Store processed email data in BigQuery.
-
-### Configuration Parameters
-
-| Parameter | Description | Required |
-|-----------|-------------|----------|
-| `PROJECT_ID` | Google Cloud Project ID | Yes |
-| `GCS_BUCKET_NAME` | Cloud Storage bucket name | Yes |
-| `BIGQUERY_DATASET` | BigQuery dataset name | Yes |
-| `BIGQUERY_TABLE` | BigQuery table name | Yes |
-| `CREDENTIALS_FILE` | OAuth2 credentials file path | Yes |
-| `GMAIL_SCOPES` | Gmail API scopes | Yes |
+---
 
 ## 🧪 Testing
 
@@ -339,28 +197,58 @@ tests/
 ├── test_auth_services.py
 ├── test_process_emails.py
 ├── test_storage.py
-├── test_gmail_processor.py
+├── test_email_processor.py
 └── conftest.py
 ```
 
-### Example Test
 
-```python
-import pytest
-from unittest.mock import Mock, patch
-from src.gmail_processor import GmailProcessor
+---
 
-def test_gmail_processor_initialization():
-    config = {
-        "PROJECT_ID": "test-project",
-        "GCS_BUCKET_NAME": "test-bucket",
-        # ... other config
-    }
-    
-    with patch('src.gmail_processor.GmailProcessor._initialize_services'):
-        processor = GmailProcessor(config)
-        assert processor.config == config
+## ☁️ Cloud Function Deployment
+
+
+### Manual Deployment
+
+```bash
+gcloud functions deploy $FUNCTION_NAME 
+    --gen2     
+    --runtime=python312    
+    --region=$REGION 
+    --source=.     
+    --entry-point=$ENTRY_POINT     --trigger-topic=$PUBSUB_TOPIC     --memory=512MB     
+    --timeout=540s     
 ```
+
+### Test the Deployment
+
+```bash
+gcloud pubsub topics publish $PUBSUB_TOPIC  --message '{"emailAddress": "jadoon.engr@gmail.com", "messageId": "abc123"}'
+```
+
+You should now have a fully functional email processing system running in your Google Cloud Project!
+
+
+
+### CI/CD Pipeline Implementation using Cloud Build
+
+
+
+## 📚 API Reference
+
+#### Methods
+
+##### `process_all_unread_emails(max_results: int = 100) -> Dict[str, int]`
+Process all unread emails and return processing summary.
+
+##### `process_email(email_ref: Dict[str, str]) -> Optional[Dict[str, Any]]`
+Process a single email and return structured data.
+
+##### `get_unread_emails(max_results: int = 100) -> List[Dict[str, Any]]`
+Fetch unread email references from Gmail.
+
+##### `store_email_in_bigquery(email_data: Dict[str, Any]) -> bool`
+Store processed email data in BigQuery.
+
 
 ## 📊 Monitoring and Logging
 
@@ -378,7 +266,7 @@ logger.warning("No attachments found") # Warnings
 logger.error("Failed to upload file")  # Errors
 ```
 
-### Monitoring Metrics
+### Monitoring Metrics (Future Enhancements)
 
 Track these key metrics in Cloud Monitoring:
 - Email processing rate
@@ -405,26 +293,6 @@ The application includes comprehensive error handling:
 - **Sensitive Data**: No email content logged in production
 - **Access Controls**: Proper BigQuery and GCS access controls
 
-### Required IAM Roles
-
-```bash
-# Service account permissions
-gcloud projects add-iam-policy-binding PROJECT_ID \
-    --member="serviceAccount:your-sa@PROJECT_ID.iam.gserviceaccount.com" \
-    --role="roles/bigquery.dataEditor"
-
-gcloud projects add-iam-policy-binding PROJECT_ID \
-    --member="serviceAccount:your-sa@PROJECT_ID.iam.gserviceaccount.com" \
-    --role="roles/storage.objectCreator"
-```
-
-## 🚀 Performance Optimization
-
-- **Batch Processing**: Process multiple emails in single BigQuery insert
-- **Parallel Uploads**: Concurrent attachment uploads to GCS
-- **Memory Management**: Efficient handling of large attachments
-- **Connection Pooling**: Reuse HTTP connections for API calls
-- **Caching**: Cache authentication tokens and service objects
 
 ## 🐛 Troubleshooting
 
@@ -466,38 +334,6 @@ logging.basicConfig(level=logging.DEBUG)
 - [ ] **Multi-User Support**: Support for multiple Gmail accounts
 - [ ] **Attachment Processing**: OCR and content extraction from attachments
 
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-### Development Setup
-
-```bash
-# Clone and setup
-git clone https://github.com/yourusername/gmail-processor.git
-cd gmail-processor
-
-# Install development dependencies  
-pip install -r requirements-dev.txt
-
-# Install pre-commit hooks
-pre-commit install
-
-# Run tests
-python -m pytest
-```
-
-### Code Style
-
-We use Black for code formatting and flake8 for linting:
-
-```bash
-# Format code
-black src/ tests/
-
-# Lint code
-flake8 src/ tests/
-```
 
 ## 📜 License
 
