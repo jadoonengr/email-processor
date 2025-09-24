@@ -263,6 +263,8 @@ gcloud pubsub topics publish email-notifier \
   --message='{"historyId": "12345"}'
 ```
 
+---
+
 ## 📁 Project Structure
 
 ```
@@ -283,8 +285,9 @@ email-processor/
 └── README.md                     # This file
 ```
 
-## ☁️ Cloud Function Deployment
+---
 
+## ☁️ Cloud Function Deployment
 
 ### Manual Deployment
 
