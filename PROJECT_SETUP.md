@@ -45,7 +45,16 @@ export SECRET_NAME='gmail-token'
 ### 1.2: Enable Required APIs
 
 ```bash
-gcloud services enable bigquery.googleapis.com     storage.googleapis.com     cloudfunctions.googleapis.com     pubsub.googleapis.com     gmail.googleapis.com     cloudbuild.googleapis.com     secretmanager.googleapis.com     artifactregistry.googleapis.com     cloudresourcemanager.googleapis.com
+gcloud services enable \
+bigquery.googleapis.com     \
+storage.googleapis.com     \
+cloudfunctions.googleapis.com     \
+pubsub.googleapis.com     \
+gmail.googleapis.com     \
+cloudbuild.googleapis.com     \
+secretmanager.googleapis.com     \
+artifactregistry.googleapis.com     \
+cloudresourcemanager.googleapis.com
 ```
 
 ### 1.3: Create Your GCP Project
@@ -87,7 +96,7 @@ gcloud pubsub topics create $PUBSUB_TOPIC
 gcloud pubsub subscriptions create $PUBSUB_SUBSCRIPTION --topic=$PUBSUB_TOPIC
 ```
 
-### 2.4: Set up Google Cloud credentials
+### 2.4: Create Gmail API Credentials
 
 You can create OAuth client IDs and secrets through the Google Cloud Console. This is where you'd create credentials for web applications or installed applications where a user directly grants consent.
 
