@@ -45,13 +45,18 @@ A Python-based serverless application built using Google Cloud Functions with co
 - [Prerequisites](#prerequisites)
 - [Configuration](#configuration)
 - [GCP Resources Setup](#gcp-resources-setup)
-- [Testing](#testing)
-- [Cloud Function Deployment](#cloud-function-deployment)
-- [API Reference](#api-reference)
+- [Development Setup](#️-development-setup)
 - [Testing](#testing)
 - [Project Structure](#-project-structure)
-- [Contributing](#contributing)
+- [Cloud Function Deployment](#cloud-function-deployment)
+- [API Reference](#api-reference)
+- [Monitoring and Logging](#-monitoring-and-logging)
+- [Error Handling](#-error-handling)
+- [Security Considerations](#-security-considerations)
+- [Troubleshooting](#-troubleshooting)
+- [Future Enhancements](#-future-enhancements)
 - [License](#license)
+- [Acknowledgment](#-license)
 
 
 ---
@@ -490,7 +495,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 ```
 
-## 📈 Roadmap
+## 📈 Future Enhancements
 
 - [ ] **Batch Processing**: Process emails in configurable batches
 - [ ] **Retry Logic**: Exponential backoff for failed operations
@@ -511,12 +516,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Gmail API for comprehensive email access
 - The Python community for excellent libraries
 
-## 📞 Support
-
-- **Documentation**: Check the [Wiki](../../wiki) for detailed guides
-- **Issues**: Report bugs and request features in [Issues](../../issues)
-- **Discussions**: Join community discussions in [Discussions](../../discussions)
-- **Email**: For private inquiries: support@yourproject.com
 
 ---
 
