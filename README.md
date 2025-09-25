@@ -43,13 +43,13 @@ A Python-based serverless application built using Google Cloud Functions with co
 
 - [Architecture](#architecture)
 - [Prerequisites](#prerequisites)
-- [Installation](#installation)
 - [Configuration](#configuration)
-- [Initial Resource Setup](#setup)
-- [Usage](#usage)
+- [GCP Resources Setup](#gcp-resources-setup)
+- [Testing](#testing)
 - [Cloud Function Deployment](#cloud-function-deployment)
 - [API Reference](#api-reference)
 - [Testing](#testing)
+- [Project Structure](#-project-structure)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -148,7 +148,7 @@ For the BigQuery table, we need to define the schema. The following information 
 | `file_type` | STRING | MIME type |
 | `gcs_url` | STRING | Cloud Storage download URL |
 
-### 3. Initial Project Setup
+## GCP Resources Setup
 
 Once we define the initial parameters above, the next step is to create those resources and then deploy the source code. Following resources are to be created:
 
