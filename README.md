@@ -153,7 +153,7 @@ For the BigQuery table, we need to define the schema. The following information 
 | `file_type` | STRING | MIME type |
 | `gcs_url` | STRING | Cloud Storage download URL |
 
-## GCP Resources Setup
+## ▶️ GCP Resources Setup
 
 Once we define the initial parameters above, the next step is to create those resources and then deploy the source code. Following resources are to be created:
 
