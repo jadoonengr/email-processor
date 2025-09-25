@@ -238,7 +238,7 @@ pytest tests/ -k "test_auth" -v
 ### Test Results
 ```
 ==================== test session starts ====================
-collected 45+ items
+collected 60+ items
 
 tests/test_main.py::TestProcessEmails ✓✓✓✓✓✓✓✓
 tests/test_auth_services.py ✓✓✓✓✓✓
@@ -248,7 +248,7 @@ tests/test_store_gcs.py ✓✓✓
 tests/test_setup_gmail_notifications.py ✓✓✓✓
 tests/test_file_utils.py ✓✓✓✓✓✓✓✓✓✓✓✓✓✓
 
-==================== 45 passed in 2.45s ====================
+==================== 60 passed in 2.45s ====================
 ```
 
 ### Manual Testing
@@ -271,18 +271,30 @@ gcloud pubsub topics publish email-notifier \
 email-processor/
 ├── src/
 │   ├── components/
-│   │   ├── auth_services.py      # Authentication services
-│   │   ├── process_emails.py     # Email processing logic
-│   │   ├── store_bigquery.py     # BigQuery operations
-│   │   ├── store_gcs.py          # Cloud Storage operations
-│   │   └── setup_gmail_notifications.py
+│   │   ├── auth_services.py              # Authentication services
+│   │   ├── process_emails.py             # Email processing logic
+│   │   ├── secret_manager.py             # GCP Secret Manager
+│   │   ├── setup_gmail_notifications.py  # Manage Gmail Notifications
+│   │   ├── store_bigquery.py             # BigQuery operations
+│   │   └── store_gcs.py                  # Cloud Storage operations
 │   ├── utils/
 │   │   └── file_utils.py         # Utility functions
-│   └── config.py                 # Configuration settings
+│   ├── config.ini                # Configurations settings
+│   └── config.py                 # Configuration management
 ├── tests/                        # Unit tests
+│   ├── 📄 test_main.py                      # Main function tests
+│   ├── 📄 test_auth_services.py             # Authentication tests
+│   ├── 📄 test_process_emails.py            # Email processing tests
+│   ├── 📄 test_secret_manager.py            # Secret manager tests
+│   ├── 📄 test_store_bigquery.py            # BigQuery storage tests
+│   ├── 📄 test_store_gcs.py                 # GCS storage tests
+│   ├── 📄 test_setup_gmail_notifications.py # Notification setup tests
+│   └── 📄 test_file_utils.py                # File utilities tests
 ├── main.py                       # Cloud Function entry point
-├── requirements.txt              # Python dependencies
-└── README.md                     # This file
+├── LICENSE.py                    # License agreement
+├── PROJECT_SETUP.py              # GCP resource setup instructions
+├── README.md                     # This file
+└── requirements.txt              # Python dependencies
 ```
 
 ---
@@ -317,19 +329,91 @@ You should now have a fully functional email processing system running in your G
 
 ## 📚 API Reference
 
-#### Methods
+### Core Functions
 
-##### `process_all_unread_emails(max_results: int = 100) -> Dict[str, int]`
-Process all unread emails and return processing summary.
+Authentication Services (`src.components.auth_services`)
 
-##### `process_email(email_ref: Dict[str, str]) -> Optional[Dict[str, Any]]`
-Process a single email and return structured data.
+```code
+authenticate_gmail() -> Service | None  
+Authenticates Gmail API service using stored credentials.
 
-##### `get_unread_emails(max_results: int = 100) -> List[Dict[str, Any]]`
-Fetch unread email references from Gmail.
+authenticate_bigquery(project_id: str) -> bigquery.Client | None  
+Creates BigQuery client for the specified project.
 
-##### `store_email_in_bigquery(email_data: Dict[str, Any]) -> bool`
-Store processed email data in BigQuery.
+authenticate_gcs(project_id: str) -> storage.Client | None  
+Creates Cloud Storage client for the specified project.
+```
+
+### Email Processing (`src.components.process_emails`)
+
+```code
+extract_email_body(payload) -> str
+Extract text content from email payload.
+
+extract_attachments(gmail_service, message: Dict) -> List[Dict]
+Extracts all attachments from a Gmail message.
+
+mark_email_read(gmail_service, message_id: str) -> None
+Removes UNREAD label from Gmail message.
+
+read_email(gmail_service, message_id: str) -> Dict
+Extracts comprehensive data from a Gmail message.
+
+list_unread_emails(gmail_service, max_results: int = 100) -> List[Dict]
+Retrieves list of unread emails from Gmail.
+```
+
+### Storage Operations
+
+#### BigQuery Storage (src.components.store_bigquery)
+
+```code
+store_emails_in_bigquery(client, table_ref: str, email_data: Dict) -> bool
+Inserts email data into BigQuery table.
+```
+
+#### Cloud Storage (src.components.store_gcs)
+
+```code
+upload_attachment_to_gcs(storage_client, bucket_name: str, file_name: str, file_data: bytes, file_type: str, message_id: str) -> str | None
+Uploads email attachment to Google Cloud Storage.
+```
+
+### Gmail Notifications (src.components.setup_gmail_notifications)
+```code
+setup_gmail_push_notifications(gmail_service) -> Dict | None
+Configures Gmail push notifications to Pub/Sub topic.
+
+stop_gmail_push_notifications(gmail_service, user_id: str = "me") -> bool
+Stops Gmail push notifications.
+```
+
+### Utility Functions (src.utils.file_utils)
+```code
+decode_base64(data_b64: str) -> str
+Decodes base64 data with automatic padding correction.
+
+sanitize_filename(filename: str) -> str
+Sanitizes filename for filesystem safety.
+
+parse_email_date(date_str: str) -> str
+Parse email date string to ISO format.
+```
+
+### Secret Manager Functions
+```code
+upload_secret(project_id: str, secret_name: str, payload: str) -> Any | None
+Uploads new version to existing secret.
+
+download_secret(project_id: str, secret_name: str) -> str | None
+Downloads latest secret version.
+```
+
+### Cloud Function Entry Point
+```code
+process_emails(cloud_event) -> None
+Main Cloud Function handler triggered by Pub/Sub.
+```
 
 
 ## 📊 Monitoring and Logging
