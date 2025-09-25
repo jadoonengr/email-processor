@@ -9,7 +9,7 @@ from google.cloud import bigquery
 from google.cloud import storage
 
 from src.config import config, ENV
-from src.utils.file_utils import download_secret, upload_secret
+from src.components.secret_manager import download_secret, upload_secret
 
 
 # Configure logging
