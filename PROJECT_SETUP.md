@@ -14,7 +14,7 @@ First, we set up the core project variables. These variables are only meant for 
 
 ```bash
 # Core Settings
-export PROJECT_ID='alpine-comfort-470817-s8'
+export PROJECT_ID='email-management-system-96bc'
 export REGION='us-central1'
 export BQ_LOCATION='US'
 
@@ -33,7 +33,7 @@ export BUCKET_NAME='gmail-attachments-bucket-2fba'
 export NOTIFICATIONS_BUCKET='gmail-pub-sub-notifications'
 
 # Pub/Sub
-export PUBSUB_TOPIC='email-notifier'
+export PUBSUB_TOPIC='email-notifier-topic'
 export PUBSUB_SUBSCRIPTION='email-notifier-sub'
 
 # Cloud Functions

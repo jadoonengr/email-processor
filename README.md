@@ -118,7 +118,7 @@ Populate `src/config.ini` with desired project resource information. Same inform
 
 ```python
 [dev]
-PROJECT_ID = alpine-comfort-470817-s8
+PROJECT_ID = email-management-system-96bc
 EMAIL_ID = aamirjadoon001@gmail.com
 CREDENTIALS_FILE = credentials.json
 SECRET_NAME = gmail-token
@@ -126,8 +126,8 @@ GMAIL_SCOPES = https://www.googleapis.com/auth/gmail.modify
 GCS_BUCKET_NAME = gmail-attachments-bucket-2fba
 BIGQUERY_DATASET = idp
 BIGQUERY_TABLE = gmail_raw_emails
-PUBSUB_TOPIC = email-notifier
-SERVICE_ACCOUNT = email-notifier-dev-sa@alpine-comfort-470817-s8. iam.gserviceaccount.com
+PUBSUB_TOPIC = email-notifier-topic
+SERVICE_ACCOUNT = email-notifier-dev-sa@{$PROJECT_ID}.iam.gserviceaccount.com
 ```
 
 ### 2. BigQuery Schema
@@ -175,7 +175,7 @@ Once we define the initial parameters above, the next step is to create those re
 
 This is quite involved process and we have created a separate page to go over all the required steps. At the end of these steps, we will be able to run our code locally (using Cloud resources).
 
-GCP Resource Setup Guide: [PROJECT_SETUP.md](PROJECT_SETUP.md)
+GCP Resource Setup Guide: [PROJECT_SETUP.md](./PROJECT_SETUP.md)
 
 ---
 
@@ -273,7 +273,7 @@ python -m src.components.auth_services
 python -m src.components.process_emails
 
 # Test with sample Pub/Sub message
-gcloud pubsub topics publish email-notifier \
+gcloud pubsub topics publish email-notifier-topic \
   --message='{"historyId": "12345"}'
 ```
 
