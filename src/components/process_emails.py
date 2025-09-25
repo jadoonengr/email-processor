@@ -8,7 +8,7 @@ from email.utils import parsedate_to_datetime
 from googleapiclient.discovery import build
 from typing import Dict, Any, List
 
-from src.components.store_gcs import upload_attachment_to_gcs
+from src.utils.file_utils import parse_email_date
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, force=True)
@@ -44,20 +44,11 @@ def extract_email_body(payload):
     return body.strip()
 
 
-def parse_email_date(date_str):
-    """Parse email date string to ISO format."""
-    try:
-        dt = parsedate_to_datetime(date_str)
-        return dt.isoformat()
-    except:
-        return datetime.now().isoformat()
-
-
 def extract_attachments(
     gmail_service,
     message: Dict,
 ) -> List[Dict[str, Any]]:
-    """Extract all attachments from email and upload to GCS."""
+    """Extract all attachments from Gmail message."""
     message_id = message["id"]
     attachments = []
 
