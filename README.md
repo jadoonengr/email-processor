@@ -41,22 +41,22 @@ A Python-based serverless application built using Google Cloud Functions with co
 
 ## 📋 Table of Contents
 
-- [Architecture](#architecture)
-- [Prerequisites](#prerequisites)
-- [Configuration](#configuration)
+- [Architecture](#️-architecture)
+- [Prerequisites](#-prerequisites)
+- [Configuration](#️-configuration)
 - [GCP Resources Setup](#gcp-resources-setup)
 - [Development Setup](#️-development-setup)
-- [Testing](#testing)
+- [Testing](#-testing)
 - [Project Structure](#-project-structure)
-- [Cloud Function Deployment](#cloud-function-deployment)
-- [API Reference](#api-reference)
+- [Cloud Function Deployment](#️-cloud-function-deployment)
+- [API Reference](#-api-reference)
 - [Monitoring and Logging](#-monitoring-and-logging)
 - [Error Handling](#-error-handling)
 - [Security Considerations](#-security-considerations)
 - [Troubleshooting](#-troubleshooting)
 - [Future Enhancements](#-future-enhancements)
-- [License](#license)
-- [Acknowledgment](#-license)
+- [License](#-license)
+- [Acknowledgment](#-acknowledgments)
 
 
 ---
