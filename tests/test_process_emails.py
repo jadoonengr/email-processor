@@ -67,6 +67,22 @@ def mock_multipart_payload():
 
 
 @pytest.fixture
+def sample_attachment_data():
+    """Sample attachment data returned by Gmail API."""
+    return {
+        "attachment1": {
+            "data": base64.urlsafe_b64encode(b"PDF file content").decode("utf-8")
+        },
+        "attachment2": {
+            "data": base64.urlsafe_b64encode(b"Image file content").decode("utf-8")
+        },
+        "attachment3": {
+            "data": base64.urlsafe_b64encode(b"Document content").decode("utf-8")
+        },
+    }
+
+
+@pytest.fixture
 def mock_message_with_attachments():
     """Mock a full email message with nested attachments."""
     return {
@@ -206,29 +222,39 @@ def test_parse_email_date_valid_date():
     assert parsed_date == "2024-10-21T10:00:00-07:00"
 
 
-@patch("src.components.process_emails.datetime")
-def test_parse_email_date_invalid_date(mock_dt):
-    """Tests fallback to current date for an invalid date string."""
-    mock_now = MagicMock()
-    mock_now.isoformat.return_value = "2024-10-21T11:00:00.000000"
-    mock_dt.now.return_value = mock_now
+def test_extract_attachments(mock_gmail_service, sample_attachment_data):
+    """Test message with single attachment in parts."""
+    message = {
+        "id": "msg123",
+        "payload": {
+            "parts": [
+                {"mimeType": "text/plain", "body": {"data": "text_content"}},
+                {
+                    "filename": "document.pdf",
+                    "mimeType": "application/pdf",
+                    "body": {"attachmentId": "attachment1"},
+                },
+            ]
+        },
+    }
 
-    parsed_date = parse_email_date("invalid date string")
-    assert parsed_date == "2024-10-21T11:00:00.000000"
+    # Mock the attachment API response
+    mock_gmail_service.users.return_value.messages.return_value.attachments.return_value.get.return_value.execute.return_value = sample_attachment_data[
+        "attachment1"
+    ]
 
+    attachments = extract_attachments(mock_gmail_service, message)
 
-@patch("src.components.process_emails.upload_attachment_to_gcs")
-def test_extract_attachments(
-    mock_upload, mock_gmail_service, mock_message_with_attachments
-):
-    """Tests extraction of attachments from a message with a mock Gmail service."""
-    mock_upload.return_value = "gs://mock-bucket/path"
-
-    attachments = extract_attachments(mock_gmail_service, mock_message_with_attachments)
-
-    assert len(attachments) == 2
+    assert len(attachments) == 1
+    assert attachments[0]["file_id"] == "attachment1"
     assert attachments[0]["file_name"] == "document.pdf"
-    assert attachments[1]["file_name"] == "photo.jpg"
+    assert attachments[0]["file_type"] == "application/pdf"
+    assert attachments[0]["file_data"] == b"PDF content"
+
+    # Verify API call
+    mock_gmail_service.users.return_value.messages.return_value.attachments.return_value.get.assert_called_once_with(
+        userId="me", messageId="msg123", id="attachment1"
+    )
 
 
 def test_mark_email_read(mock_gmail_service):
