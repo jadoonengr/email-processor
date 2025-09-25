@@ -41,6 +41,7 @@ A Python-based serverless application built using Google Cloud Functions with co
 
 ## 📋 Table of Contents
 
+- [Quick Start](#quick-start)
 - [Architecture](#️-architecture)
 - [Prerequisites](#-prerequisites)
 - [Configuration](#️-configuration)
@@ -58,6 +59,14 @@ A Python-based serverless application built using Google Cloud Functions with co
 - [License](#-license)
 - [Acknowledgment](#-acknowledgments)
 
+---
+
+## Quick Start
+For experienced developers who want to get running fast:
+1. `git clone [repo]`
+2. Follow [PROJECT_SETUP.md](PROJECT_SETUP.md) for GCP resources
+3. `pip install -r requirements.txt`
+4. Deploy with the commands in [Cloud Function Deployment](#cloud-function-deployment)
 
 ---
 
@@ -309,12 +318,15 @@ email-processor/
 ### Manual Deployment
 
 ```bash
-gcloud functions deploy $FUNCTION_NAME 
-    --gen2     
-    --runtime=python312    
-    --region=$REGION 
-    --source=.     
-    --entry-point=$ENTRY_POINT     --trigger-topic=$PUBSUB_TOPIC     --memory=512MB     
+gcloud functions deploy $FUNCTION_NAME \
+    --gen2 \
+    --runtime=python312 \
+    --region=$REGION \
+    --source=. \
+    --entry-point=$ENTRY_POINT \
+    --trigger-topic=$PUBSUB_TOPIC \
+    --service-account=$DEPLOY_SA_EMAIL \
+    --memory=512MB \
     --timeout=540s     
 ```
 
@@ -485,6 +497,12 @@ Solution: Verify table schema matches data structure
 ```
 Error: Failed to upload attachment
 Solution: Check bucket permissions and file size limits
+```
+
+#### Authentication Errors
+```
+Error: Failed to download secret: 403 Forbidden
+Solution: Verify service account has secretmanager.secretAccessor role
 ```
 
 ### Debug Mode
