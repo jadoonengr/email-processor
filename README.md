@@ -10,7 +10,7 @@ A Python-based serverless application built using Google Cloud Functions with co
 
 ---
 
-## 🚀 Tech Stack Summary
+## 🧱 Tech Stack Summary
 
 | **Category** | **Technology** | **Purpose** |
 |--------------|----------------|-------------|
@@ -61,7 +61,7 @@ A Python-based serverless application built using Google Cloud Functions with co
 
 ---
 
-## Quick Start
+## ⚡ Quick Start
 For experienced developers who want to get running fast:
 1. `git clone [repo]`
 2. Follow [PROJECT_SETUP.md](PROJECT_SETUP.md) for GCP resources
@@ -123,7 +123,7 @@ EMAIL_ID = aamirjadoon001@gmail.com
 CREDENTIALS_FILE = credentials.json
 SECRET_NAME = gmail-token
 GMAIL_SCOPES = https://www.googleapis.com/auth/gmail.modify
-GCS_BUCKET_NAME = gmail-attachments-bucket-2fba
+GCS_BUCKET_NAME = gmail-attachments-bucket-96bc-2fba
 BIGQUERY_DATASET = idp
 BIGQUERY_TABLE = gmail_raw_emails
 PUBSUB_TOPIC = email-notifier-topic
@@ -199,6 +199,13 @@ GCP Resource Setup Guide: [PROJECT_SETUP.md](./PROJECT_SETUP.md)
    pip install -r requirements.txt
    ```
 
+4. **Create Gmail access token**
+(<span style="color: red;">CRITICAL STEP</span>)
+   ```bash
+   # Unit test to run script that loads token from Gmail API
+   pytest tests/ -k "test_process_emails_real_api_calls" -v
+   ```
+
 ---
 
 ## 🧪 Testing
@@ -251,30 +258,24 @@ pytest tests/ -k "test_auth" -v
 
 ### Test Results
 ```
-==================== test session starts ====================
-collected 60+ items
+================================================== tests coverage ================================================== 
+_________________________________ coverage: platform win32, python 3.13.7-final-0 __________________________________ 
 
-tests/test_main.py::TestProcessEmails ✓✓✓✓✓✓✓✓
-tests/test_auth_services.py ✓✓✓✓✓✓
-tests/test_process_emails.py ✓✓✓✓✓✓✓✓
-tests/test_store_bigquery.py ✓✓✓✓
-tests/test_store_gcs.py ✓✓✓
-tests/test_setup_gmail_notifications.py ✓✓✓✓
-tests/test_file_utils.py ✓✓✓✓✓✓✓✓✓✓✓✓✓✓
-
-==================== 60 passed in 2.45s ====================
-```
-
-### Manual Testing
-
-```bash
-# Test individual components
-python -m src.components.auth_services
-python -m src.components.process_emails
-
-# Test with sample Pub/Sub message
-gcloud pubsub topics publish email-notifier-topic \
-  --message='{"historyId": "12345"}'
+Name                                          Stmts   Miss  Cover
+-----------------------------------------------------------------
+src\__init__.py                                   0      0   100%
+src\components\auth_services.py                  58      0   100%
+src\components\process_emails.py                 65      9    86%
+src\components\secret_manager.py                 26      0   100%
+src\components\setup_gmail_notifications.py      40      2    95%
+src\components\store_bigquery.py                 20      0   100%
+src\components\store_gcs.py                      22      0   100%
+src\config.py                                     5      0   100%
+src\utils\file_utils.py                          35      5    86%
+-----------------------------------------------------------------
+TOTAL                                           271     16    94%
+Coverage HTML written to dir htmlcov
+=============================================== 61 passed in 11.28s ================================================ 
 ```
 
 ---
@@ -317,6 +318,19 @@ email-processor/
 
 ### Manual Deployment
 
+First we redefine the environment variables, if not done previously.
+
+```bash
+export PROJECT_ID='email-management-system-96bc'
+export REGION='us-central1'
+export ENTRY_POINT='process_emails'
+export PUBSUB_TOPIC='email-notifier-topic'
+export SERVICE_ACCOUNT_NAME="email-mgmt-dev-sa"
+export SERVICE_ACCOUNT_EMAIL="${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+```
+
+Then we run the one-time manual deployment instruction.
+
 ```bash
 gcloud functions deploy $FUNCTION_NAME \
     --gen2 \
@@ -325,7 +339,7 @@ gcloud functions deploy $FUNCTION_NAME \
     --source=. \
     --entry-point=$ENTRY_POINT \
     --trigger-topic=$PUBSUB_TOPIC \
-    --service-account=$DEPLOY_SA_EMAIL \
+    --service-account=$SERVICE_ACCOUNT_EMAIL \
     --memory=512MB \
     --timeout=540s     
 ```
@@ -333,7 +347,14 @@ gcloud functions deploy $FUNCTION_NAME \
 ### Test the Deployment
 
 ```bash
-gcloud pubsub topics publish $PUBSUB_TOPIC  --message '{"emailAddress": "jadoon.engr@gmail.com", "messageId": "abc123"}'
+gcloud pubsub topics publish $PUBSUB_TOPIC  \
+--message '{"emailAddress": "jadoon.engr@gmail.com", "messageId": "abc123"}'
+```
+
+```bash
+# Test with sample Pub/Sub message
+gcloud pubsub topics publish email-notifier-topic \
+  --message='{"historyId": "12345"}'
 ```
 
 You should now have a fully functional email processing system running in your Google Cloud Project!
@@ -342,7 +363,58 @@ You should now have a fully functional email processing system running in your G
 
 ### CI/CD Pipeline Implementation using Cloud Build
 
+We create the CI/CD pipeline using the Google Cloud Build coupled with the GitHub repository. For this purpose we follow two steps:
 
+Step 1: Connect Google Cloud Platform to the GitHub.
+
+Go to Cloud Build > Triggers
+
+```text
+1. Select source code management provider
+- Click "Connect Repository"
+- Region: global (Global)
+- Select "GitHub (Cloud Build GitHub App)"
+
+2. Authenticate
+Authenticate and select your repository
+- GitHub account: jadoonengr
+- Repository: email-management-system
+
+3. Agree to agreement and click connect.
+```
+
+Step 2: Create Cloud Build Trigger
+
+Go to Cloud Build > Triggers  
+Click "Create Trigger"  
+Fill in these details:  
+
+```text
+Name: email-mgmt-sys-cb-trigger
+Region: global (Global)
+Event: Push to a branch
+
+Source: 
+- Repository service: Cloud Build Repositories
+- Repository generation: 1st gen
+
+- Repository: jadoonengr/email-management-system (GitHub App)
+- Branch pattern: ^develop$
+
+Configuration:
+- Type: Cloud Build configuration file
+- Location: Repository
+- Cloud Build configuration file location: deployment/cloudbuild.yaml
+
+Substitution variables:
+- Variable 1: _APP_ENV
+- Value 1: dev
+
+Service account:  
+- Service account name: email-mgmt-deploy-dev-sa@email-management-system-96bc.iam.gserviceaccount.com
+
+Click Create!
+```
 
 ## 📚 API Reference
 
@@ -499,7 +571,7 @@ Error: Failed to upload attachment
 Solution: Check bucket permissions and file size limits
 ```
 
-#### Authentication Errors
+#### Secret Loading Errors
 ```
 Error: Failed to download secret: 403 Forbidden
 Solution: Verify service account has secretmanager.secretAccessor role
@@ -537,6 +609,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ by [Aamir M. Khan](https://github.com/jadoonengr)**
+**Made with ❤️ by [Aamir M. Khan](https://www.linkedin.com/in/aamirmehmoodkhan/)**
 
 *If this project helped you, please consider giving it a ⭐!*
