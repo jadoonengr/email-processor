@@ -79,10 +79,10 @@ def process_emails(cloud_event):
         )
 
         if not emails:
-            logger.warning("📭 No unread emails found.")
+            logger.info(" 📭 No unread emails found.")
 
         else:
-            logger.warning(f"Found {len(emails)} unread messages.")
+            logger.info(f"Found {len(emails)} unread messages.")
 
             for i, email in enumerate(emails, 1):
                 logger.info(
@@ -101,9 +101,9 @@ def process_emails(cloud_event):
                     file_type = attachment["file_type"]
 
                     if not file_data:
-                        logger.warning(f"  ⚠ No data for attachment: {file_name}")
+                        logger.warning(f" ⚠ No data for attachment: {file_name}")
                     else:
-                        gcs_url = upload_attachment_to_gcs(
+                        gcs_upload_status, gcs_url = upload_attachment_to_gcs(
                             storage_client,
                             GCS_BUCKET_NAME,
                             file_name,
@@ -116,9 +116,9 @@ def process_emails(cloud_event):
                         attachment.pop("file_data", None)
 
                         # Add GCS URL to attachment info
-                        if gcs_url:
+                        if gcs_upload_status and gcs_url:
                             attachment["gcs_url"] = gcs_url
-                            logger.info(f"  📎 Attachment uploaded to GCS: {gcs_url}")
+                            logger.info(f" 📎 Attachment uploaded to GCS: {gcs_url}")
                         else:
                             logger.warning(
                                 f"  ⚠ Failed to upload attachment: {file_name}"
@@ -126,11 +126,16 @@ def process_emails(cloud_event):
 
                 # Store email to BigQuery
                 table_ref = f"{PROJECT_ID}.{BIGQUERY_DATASET}.{BIGQUERY_TABLE}"
-                store_emails_in_bigquery(bigquery_client, table_ref, extracted_email)
-                logger.info(f"\n✅ Processing completed successfully!")
+                bq_upload_status = store_emails_in_bigquery(
+                    bigquery_client, table_ref, extracted_email
+                )
 
                 # Mark email as read
-                mark_email_read(gmail_service, email["id"])
+                if gcs_upload_status and bq_upload_status:
+                    mark_email_read(gmail_service, email["id"])
+                    logger.info(f"\n ✅ Processing completed successfully!")
+                else:
+                    logger.warning(f"\n ⚠ Processing completed with errors!")
 
     except Exception as e:
         logger.error(f"An unexpected error occurred: {e}")

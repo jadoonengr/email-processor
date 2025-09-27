@@ -1,0 +1,94 @@
+[
+  {
+    "name": "message_id",
+    "mode": "REQUIRED",
+    "type": "STRING"
+  },
+  {
+    "name": "thread_id",
+    "mode": "NULLABLE",
+    "type": "STRING"
+  },
+  {
+    "name": "subject",
+    "mode": "NULLABLE",
+    "type": "STRING"
+  },
+  {
+    "name": "sender",
+    "mode": "NULLABLE",
+    "type": "STRING"
+  },
+  {
+    "name": "recipient",
+    "mode": "NULLABLE",
+    "type": "STRING"
+  },
+  {
+    "name": "date_received",
+    "mode": "NULLABLE",
+    "type": "STRING"
+  },
+  {
+    "name": "parsed_date",
+    "mode": "NULLABLE",
+    "type": "TIMESTAMP"
+  },
+  {
+    "name": "body_text",
+    "mode": "NULLABLE",
+    "type": "STRING"
+  },
+  {
+    "name": "label_ids",
+    "mode": "NULLABLE",
+    "type": "STRING"
+  },
+  {
+    "name": "snippet",
+    "mode": "NULLABLE",
+    "type": "STRING"
+  },
+  {
+    "name": "message_size",
+    "mode": "NULLABLE",
+    "type": "INTEGER"
+  },
+  {
+    "name": "attachment_count",
+    "mode": "NULLABLE",
+    "type": "INTEGER"
+  },
+  {
+    "name": "attachments_info",
+    "mode": "REPEATED",
+    "type": "RECORD",
+    "fields": [
+      {
+        "name": "file_id",
+        "mode": "NULLABLE",
+        "type": "STRING"
+      },
+      {
+        "name": "file_name",
+        "mode": "NULLABLE",
+        "type": "STRING"
+      },
+      {
+        "name": "file_type",
+        "mode": "NULLABLE",
+        "type": "STRING"
+      },
+      {
+        "name": "gcs_url",
+        "mode": "NULLABLE",
+        "type": "STRING"
+      }
+    ]
+  },
+  {
+    "name": "processed_at",
+    "mode": "NULLABLE",
+    "type": "TIMESTAMP"
+  }
+]

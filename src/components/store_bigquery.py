@@ -49,7 +49,7 @@ def store_emails_in_bigquery(
             logger.warning(f"❌ BigQuery insertion errors: {errors}")
             return False
         else:
-            logger.info(f"✓ Stored email ({email['subject']}) in BigQuery")
+            logger.info(f"✅ Stored email ({email['subject']}) in BigQuery")
             return True
 
     except Exception as e:

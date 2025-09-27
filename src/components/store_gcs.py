@@ -38,8 +38,8 @@ def upload_attachment_to_gcs(
         )
 
         qualified_blob_name = f"gs://{bucket_name}/{blob_name}"
-        return qualified_blob_name
+        return True, qualified_blob_name
 
     except Exception as e:
         logger.error(f"  ✗ Upload failed for {file_name}: {e}")
-        return None
+        return False, None
