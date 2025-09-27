@@ -75,7 +75,7 @@ def test_authenticate_gmail_valid_token(
     assert service is mock_gmail_service
     mock_download_secret.assert_called_once_with("mock-project-dev", "mock-gmail-token")
     mock_credentials.from_authorized_user_info.assert_called_once()
-    mock_upload_secret.assert_not_called()
+    mock_upload_secret.assert_called_once()
     mock_build.assert_called_once_with("gmail", "v1", credentials=mock_token_obj)
 
 
@@ -115,6 +115,7 @@ def test_authenticate_gmail_expired_token(
 @patch("src.components.auth_services.InstalledAppFlow")
 def test_authenticate_gmail_no_token(
     mock_flow,
+    mock_credentials,
     mock_upload_secret,
     mock_download_secret,
     mock_config,
@@ -128,9 +129,10 @@ def test_authenticate_gmail_no_token(
         authenticate_gmail()
 
     # Assertions
-    mock_flow.from_client_secrets_file.assert_not_called()
-    mock_flow_instance.run_local_server.assert_not_called()
-    mock_upload_secret.assert_not_called()
+    mock_flow.from_client_secrets_file.assert_called_once()
+    mock_flow_instance.run_local_server.assert_called_once()
+    mock_credentials.from_authorized_user_info.assert_not_called()
+    mock_upload_secret.assert_called_once()
 
 
 @patch("src.components.auth_services.download_secret", return_value=None)
