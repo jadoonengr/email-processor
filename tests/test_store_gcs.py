@@ -89,7 +89,7 @@ def test_upload_attachment_to_gcs_failure(mock_storage_client):
     )
 
     # Assert that the result is None
-    assert result is None
+    assert result[1] is None
 
 
 @patch(

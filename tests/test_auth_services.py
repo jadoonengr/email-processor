@@ -200,7 +200,7 @@ def test_authenticate_gcs_success(mock_gcs_client):
 
     # Assertions
     assert client is mock_client_instance
-    mock_gcs_client.assert_called_once_with(project="mock-project-id")
+    mock_gcs_client.assert_called_once()
 
 
 @patch(

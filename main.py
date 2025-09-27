@@ -131,7 +131,9 @@ def process_emails(cloud_event):
                 )
 
                 # Mark email as read
-                if gcs_upload_status and bq_upload_status:
+                if (attachments == [] and bq_upload_status) or (
+                    attachments != [] and gcs_upload_status and bq_upload_status
+                ):
                     mark_email_read(gmail_service, email["id"])
                     logger.info(f"\n ✅ Processing completed successfully!")
                 else:

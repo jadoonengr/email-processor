@@ -89,7 +89,11 @@ def test_process_emails_success_with_attachments(
         ],
     }
     mock_read_email.return_value = mock_email_data
-    mock_upload_gcs.return_value = "https://storage.googleapis.com/test-bucket/test.pdf"
+    mock_store_bigquery.return_value = True
+    mock_upload_gcs.return_value = (
+        True,
+        "https://storage.googleapis.com/test-bucket/test.pdf",
+    )
 
     with caplog.at_level(logging.INFO):
         # Call the function
@@ -257,6 +261,7 @@ def test_process_emails_with_attachment_no_data(
         ],
     }
     mock_read_email.return_value = mock_email_data
+    mock_store_bigquery.return_value = True
 
     with caplog.at_level(logging.INFO):
         # Call the function
@@ -319,7 +324,7 @@ def test_process_emails_upload_failure(
         ],
     }
     mock_read_email.return_value = mock_email_data
-    mock_upload_gcs.return_value = None  # Upload failed
+    mock_upload_gcs.return_value = False, None  # Upload failed
 
     with caplog.at_level(logging.INFO):
         # Call the function
@@ -365,11 +370,24 @@ def test_process_emails_multiple_emails(
     mock_emails = [{"id": "email1"}, {"id": "email2"}, {"id": "email3"}]
     mock_list_emails.return_value = mock_emails
 
-    mock_email_data = {
-        "subject": "Test Email",
+    mock_email1_data = {
+        "subject": "Test Email 1",
         "attachments": [],  # No attachments for simplicity
     }
-    mock_read_email.return_value = mock_email_data
+    mock_email2_data = {
+        "subject": "Test Email 2",
+        "attachments": [],  # No attachments for simplicity
+    }
+    mock_email3_data = {
+        "subject": "Test Email 3",
+        "attachments": [],  # No attachments for simplicity
+    }
+    mock_read_email.side_effect = [
+        mock_email1_data,  # First call
+        mock_email2_data,  # Second call
+        mock_email3_data,  # Third call
+    ]
+    mock_store_bigquery.side_effect = [True, True, True]  # All succeed
 
     with caplog.at_level(logging.INFO):
         # Call the function
