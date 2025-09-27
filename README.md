@@ -41,11 +41,11 @@ A Python-based serverless application built using Google Cloud Functions with co
 
 ## 📋 Table of Contents
 
-- [Quick Start](#quick-start)
+- [Quick Start](#-quick-start)
 - [Architecture](#️-architecture)
 - [Prerequisites](#-prerequisites)
 - [Configuration](#️-configuration)
-- [GCP Resources Setup](#gcp-resources-setup)
+- [GCP Resources Setup](#️-gcp-resources-setup)
 - [Development Setup](#️-development-setup)
 - [Testing](#-testing)
 - [Project Structure](#-project-structure)
