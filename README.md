@@ -258,24 +258,33 @@ pytest tests/ -k "test_auth" -v
 
 ### Test Results
 ```
-================================================== tests coverage ================================================== 
-_________________________________ coverage: platform win32, python 3.13.7-final-0 __________________________________ 
-
-Name                                          Stmts   Miss  Cover
------------------------------------------------------------------
-src\__init__.py                                   0      0   100%
-src\components\auth_services.py                  58      0   100%
-src\components\process_emails.py                 65      9    86%
-src\components\secret_manager.py                 26      0   100%
-src\components\setup_gmail_notifications.py      40      2    95%
-src\components\store_bigquery.py                 20      0   100%
-src\components\store_gcs.py                      22      0   100%
-src\config.py                                     5      0   100%
-src\utils\file_utils.py                          35      5    86%
------------------------------------------------------------------
-TOTAL                                           271     16    94%
-Coverage HTML written to dir htmlcov
-=============================================== 61 passed in 11.28s ================================================ 
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.11.13-final-0 _______________
+Name                                          Stmts   Miss  Cover   Missing
+---------------------------------------------------------------------------
+__init__.py                                       0      0   100%
+main.py                                          62      0   100%
+src/__init__.py                                   0      0   100%
+src/components/auth_services.py                  58      0   100%
+src/components/process_emails.py                 65      9    86%   32-37, 58, 87-108
+src/components/secret_manager.py                 26      0   100%
+src/components/setup_gmail_notifications.py      40      2    95%   92, 96
+src/components/store_bigquery.py                 20      0   100%
+src/components/store_gcs.py                      22      0   100%
+src/config.py                                     5      0   100%
+src/utils/file_utils.py                          35      5    86%   52-56
+tests/__init__.py                                 0      0   100%
+tests/test_auth_services.py                      95      0   100%
+tests/test_file_utils.py                         74      0   100%
+tests/test_main.py                              217      0   100%
+tests/test_process_emails.py                    120      1    99%   88
+tests/test_secret_manager.py                     80      0   100%
+tests/test_setup_gmail_notifications.py          42      0   100%
+tests/test_store_bigquery.py                     52      0   100%
+tests/test_store_gcs.py                          47      0   100%
+---------------------------------------------------------------------------
+TOTAL                                          1060     17    98%
+============================== 61 passed in 1.85s ==============================
 ```
 
 ---
