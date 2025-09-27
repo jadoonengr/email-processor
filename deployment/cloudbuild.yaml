@@ -126,26 +126,26 @@ steps:
 # Substitution variables
 substitutions:
   # Core settings
-  _PROJECT_ID: 'alpine-comfort-470817-s8'
+  _PROJECT_ID: 'email-management-system-96bc'
   _REGION: 'us-central1'
   _BQ_LOCATION: 'US'
   
   # Service account
-  _SERVICE_ACCOUNT_EMAIL: 'email-notifier-dev-sa@alpine-comfort-470817-s8.iam.gserviceaccount.com'
+  _SERVICE_ACCOUNT_EMAIL: 'email-mgmt-dev-sa@email-management-system-96bc.iam.gserviceaccount.com'
   
   # BigQuery
   _DATASET_NAME: 'idp'
   _TABLE_NAME: 'gmail_raw_emails'
   
   # Cloud Storage
-  _BUCKET_NAME: 'gmail-attachments-bucket-2fba'
+  _BUCKET_NAME: 'gmail-attachments-bucket-96bc-2fba'
   
   # Pub/Sub
-  _PUBSUB_TOPIC: 'email-notifier'
+  _PUBSUB_TOPIC: 'email-notifier-topic'
   _PUBSUB_SUBSCRIPTION: 'email-notifier-sub'
   
   # Cloud Functions
-  _FUNCTION_NAME: 'email-processor'
+  _FUNCTION_NAME: 'email-management-system'
   _ENTRY_POINT: 'process_emails'
   _SECRET_NAME: 'gmail-token'
 
