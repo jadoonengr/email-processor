@@ -51,7 +51,7 @@ def test_upload_attachment_to_gcs_success(mock_dt, mock_storage_client):
     expected_blob_name = f"2025-09-20/{message_id}/{file_name}"
     expected_url = f"gs://{bucket_name}/{expected_blob_name}"
 
-    assert result == expected_url
+    assert result[1] == expected_url
 
     # Verify the GCS client methods were called correctly
     mock_storage_client.get_bucket.assert_called_once_with(bucket_name)
