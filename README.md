@@ -1,6 +1,6 @@
 # Email Management and Processing System
 
-A Python-based serverless application built using Google Cloud Functions with comprehensive email management capabilities. It processes emails by automatically extracting Gmail messages and storing structured data in BigQuery. Moreover, the email attachments (if any) are saved in Cloud Storage.
+Email Management System (EMS) is a Python-based serverless application built using Google Cloud Functions, having comprehensive email management, processing, and storage capabilities. It processes emails by automatically extracting Gmail messages and storing structured data in BigQuery. Moreover, the email attachments (if any) are saved in Cloud Storage.
 
 
 ![Python](https://img.shields.io/badge/Python-3.13-blue.svg)
