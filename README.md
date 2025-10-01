@@ -79,11 +79,7 @@ The application follows a modular architecture:
 - **Storage Layer**: Manages data persistence in Google Cloud services
 - **Orchestration Layer**: Coordinates the entire workflow
 
-```
-Gmail API → Pub/Sub Topic → Cloud Function → Email Text + Email Attachments
-                                                 ↓              ↓
-                                              BigQuery    Cloud Storage
-```
+![EMS Architecture](EMS.png "EMS Architecture")
 
 Key features of the architecture are:
 
